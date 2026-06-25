@@ -33,4 +33,4 @@ Initial setup of the Moon-Research subagent system. Seed data created to populat
 - [ ] Measure heterophily ratios of standard DyG-AD datasets
 - [ ] Run rapid prototype for heterophily-aware idea
 - [ ] Decompose remaining papers (StrGNN, GDN, EvolveGCN) into modules
-- [ ] Run `/combinations` to recompute the idea hypergraph with all modules
+- [ ] Run `/mr combinations` to recompute the idea hypergraph with all modules

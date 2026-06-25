@@ -199,7 +199,7 @@ Cross-domain ideas require special venue consideration. The KB Manager:
 
 ### Activation
 
-Cross-domain combinations are evaluated when `/combinations` is run and modules from >=2 domains exist in the KB. Cross-domain hyperedges are tagged with `confidence: speculative` by default and require the `data_bridge` field to be populated before the idea is promoted to `active`.
+Cross-domain combinations are evaluated when `/mr combinations` is run and modules from >=2 domains exist in the KB. Cross-domain hyperedges are tagged with `confidence: speculative` by default and require the `data_bridge` field to be populated before the idea is promoted to `active`.
 
 ## Retrieval Protocol
 

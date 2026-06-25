@@ -41,7 +41,7 @@ This orchestrator manages a nine-agent research pipeline for GNN research. Each 
 
 ### Support Commands
 
-`/discuss` -> deep-discussion, `/write` -> paper-writer, `/rebuttal` -> rebuttal-writer, `/log` -> research-log, `/present` -> presentation-builder.
+`/mr discuss` -> deep-discussion, `/mr write` -> paper-writer, `/mr rebuttal` -> rebuttal-writer, `/mr log` -> research-log, `/mr present` -> presentation-builder.
 
 ---
 
@@ -52,10 +52,10 @@ This orchestrator manages a nine-agent research pipeline for GNN research. Each 
 When a paper is read and stored:
 
 1. **Paper Reader agent** produces structured paper notes and stores the paper entry in `knowledge-base/papers/gnn/`.
-2. **KB Manager** (dispatched automatically or via `/decompose`) decomposes the paper into its constituent modules — graph encoder, temporal module, anomaly scorer, loss function, training strategy — and stores each module in `knowledge-base/modules/gnn/`. If an equivalent module already exists from another paper, the evidence is merged and validation status is upgraded.
+2. **KB Manager** (dispatched automatically or via `/mr decompose`) decomposes the paper into its constituent modules — graph encoder, temporal module, anomaly scorer, loss function, training strategy — and stores each module in `knowledge-base/modules/gnn/`. If an equivalent module already exists from another paper, the evidence is merged and validation status is upgraded.
 3. **KB Manager** recomputes module composability (`composable_with` / `incompatible_with` fields).
-4. **KB Manager** (via `/combinations`) recomputes the idea hypergraph: discovers all K-way module combinations that satisfy complementarity, compatibility, synergy, and minimality. New combinations become idea entries in `ideas/incubating/`.
-5. **KB Manager** (via `/recommend-venue`) recommends target venues for active ideas based on contribution strength and domain fit.
+4. **KB Manager** (via `/mr combinations`) recomputes the idea hypergraph: discovers all K-way module combinations that satisfy complementarity, compatibility, synergy, and minimality. New combinations become idea entries in `ideas/incubating/`.
+5. **KB Manager** (via `/mr recommend-venue`) recommends target venues for active ideas based on contribution strength and domain fit.
 
 This pipeline ensures that every paper contributes reusable modules, every validated module combination becomes a candidate idea, and every idea has a concrete publication target.
 
@@ -213,19 +213,19 @@ The following commands are available at any time, regardless of which domain is 
 
 | Command | Agent | Function |
 |---------|-------|----------|
-| `/new-domain <name> "<desc>"` | domain-init | Create a new research domain with full scaffolding |
-| `/ideas [--domain X] [--status Y]` | kb-manager | List ideas across domains with filtering |
+| `/mr new-domain <name> "<desc>"` | domain-init | Create a new research domain with full scaffolding |
+| `/mr ideas [--domain X] [--status Y]` | kb-manager | List ideas across domains with filtering |
 | `/idea <slug>` | kb-manager | View detailed idea entry |
 | `/idea promote\|discard <slug>` | kb-manager | Change idea status |
-| `/modules [--domain X] [--category Y]` | kb-manager | Browse module library |
+| `/mr modules [--domain X] [--category Y]` | kb-manager | Browse module library |
 | `/module <slug>` | kb-manager | View module with source papers and composability |
-| `/papers [--domain X] [--tier Y] [--code]` | kb-manager | List papers with filtering |
+| `/mr papers [--domain X] [--tier Y] [--code]` | kb-manager | List papers with filtering |
 | `/paper <slug>` | kb-manager | View paper with modules and connections |
-| `/venues [--tier X] [--domain Y]` | kb-manager | Browse venue database |
+| `/mr venues [--tier X] [--domain Y]` | kb-manager | Browse venue database |
 | `/venue <slug>` | kb-manager | View venue with requirements and similar papers |
-| `/status [--domain X]` | kb-manager | Pipeline overview: active ideas, experiments, papers |
-| `/search "query"` | kb-manager | Unified cross-KB search |
-| `/export idea\|bib <target>` | kb-manager | Export structured data |
+| `/mr status [--domain X]` | kb-manager | Pipeline overview: active ideas, experiments, papers |
+| `/mr search "query"` | kb-manager | Unified cross-KB search |
+| `/mr export idea\|bib <target>` | kb-manager | Export structured data |
 
 ---
 

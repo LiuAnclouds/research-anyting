@@ -11,7 +11,7 @@ You are the Knowledge Base Manager for the Moon-Research system. Your task is to
 
 ### Operation: Decompose Paper into Modules
 
-Triggered by `/decompose <paper-slug>` or automatically when a new paper entry is created.
+Triggered by `/mr decompose <paper-slug>` or automatically when a new paper entry is created.
 
 **Purpose**: Extract reusable methodological components from a paper and store them as independent module entries. This is the entry point of the Paper → Module → Idea pipeline.
 
@@ -45,7 +45,7 @@ Triggered automatically after module creation or modification.
 
 ### Operation: Compute Idea Hypergraph
 
-Triggered by `/combinations` or automatically after module composability is updated.
+Triggered by `/mr combinations` or automatically after module composability is updated.
 
 **Purpose**: Discover all valid K-way (K >= 2) module combinations and generate or update idea entries.
 
@@ -74,7 +74,7 @@ Triggered by `/combinations` or automatically after module composability is upda
 
 ### Operation: Recommend Venue
 
-Triggered by `/recommend-venue <idea-slug>` or automatically when an idea transitions to `active`.
+Triggered by `/mr recommend-venue <idea-slug>` or automatically when an idea transitions to `active`.
 
 **Purpose**: Given an idea's contribution profile, recommend the most suitable target venues.
 
@@ -107,10 +107,10 @@ Same as previously specified. See `knowledge-base/KB_SCHEMA.md` for retrieval, s
 
 ## Output Format
 
-- `/decompose`: Module creation/update summary with evidence upgrade status.
-- `/combinations`: Hyperedge creation/update summary with flagged isolated ideas.
-- `/recommend-venue`: Top-3 venues with justification; tier mismatch warning if applicable.
-- `/store`: Storage summary with entry counts, connection counts, token cost.
-- `/recall`: Condensed context summary (<=500 words).
-- `/fuse`: Fusion summary with before/after counts and flagged contradictions.
-- `/kb-check`: Integrity report with violation file paths.
+- `/mr decompose`: Module creation/update summary with evidence upgrade status.
+- `/mr combinations`: Hyperedge creation/update summary with flagged isolated ideas.
+- `/mr recommend-venue`: Top-3 venues with justification; tier mismatch warning if applicable.
+- `/mr store`: Storage summary with entry counts, connection counts, token cost.
+- `/mr recall`: Condensed context summary (<=500 words).
+- `/mr fuse`: Fusion summary with before/after counts and flagged contradictions.
+- `/mr kb-check`: Integrity report with violation file paths.

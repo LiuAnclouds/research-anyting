@@ -14,7 +14,7 @@ session_ref: seed-data
 
 ## Mechanism
 
-The Moon-Research system supports cross-domain idea generation by allowing modules from different domains (GNN and VLA-VLM) to be combined into a single idea. This mechanism is activated when the KB Manager's `/combinations` operation detects that modules from different domains satisfy the hypergraph criteria.
+The Moon-Research system supports cross-domain idea generation by allowing modules from different domains (GNN and VLA-VLM) to be combined into a single idea. This mechanism is activated when the KB Manager's `/mr combinations` operation detects that modules from different domains satisfy the hypergraph criteria.
 
 ## When Cross-Domain Combinations Are Valid
 
@@ -42,7 +42,7 @@ A cross-domain hyperedge is valid when:
 
 ## Activation
 
-Cross-domain combinations are automatically evaluated when `/combinations` is run and modules from >=2 domains exist in the KB. The KB Manager flags cross-domain hyperedges with `domain: cross-domain` in the idea entry.
+Cross-domain combinations are automatically evaluated when `/mr combinations` is run and modules from >=2 domains exist in the KB. The KB Manager flags cross-domain hyperedges with `domain: cross-domain` in the idea entry.
 
 ## Limitations
 

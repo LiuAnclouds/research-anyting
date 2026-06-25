@@ -175,7 +175,7 @@ Supported flags:
 
 ## Why `/mr` Prefix
 
-- **No conflicts**: Generic commands like `/search`, `/write`, `/status` would conflict with other Claude Code plugins. The `/mr` prefix ensures all Moon-Research commands are uniquely identifiable.
+- **No conflicts**: Generic commands like `/mr search`, `/mr write`, `/mr status` would conflict with other Claude Code plugins. The `/mr` prefix ensures all Moon-Research commands are uniquely identifiable.
 - **Discoverability**: Typing `/mr` shows all available subcommands.
 - **Consistency**: Every command follows the same pattern: `/mr <category> <action>`.
 - **Brevity**: Two characters is short enough to type quickly while being distinctive enough to avoid conflicts.

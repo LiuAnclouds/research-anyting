@@ -66,10 +66,10 @@ Same sequential dispatch pattern as GNN full pipeline, with VLA/VLM-specific qua
 ### Paper → Module → Idea Pipeline
 
 1. **Paper Reader agent** produces structured paper notes and stores the paper entry in `knowledge-base/papers/vla-vlm/`.
-2. **KB Manager** (via `/decompose`) decomposes the paper into constituent modules — visual encoder, projector, action head, and training recipe — and stores each module in `knowledge-base/modules/vla-vlm/`. If an equivalent module already exists from another paper, the evidence is merged and validation status is upgraded.
+2. **KB Manager** (via `/mr decompose`) decomposes the paper into constituent modules — visual encoder, projector, action head, and training recipe — and stores each module in `knowledge-base/modules/vla-vlm/`. If an equivalent module already exists from another paper, the evidence is merged and validation status is upgraded.
 3. **KB Manager** recomputes module composability.
-4. **KB Manager** (via `/combinations`) recomputes the idea hypergraph.
-5. **KB Manager** (via `/recommend-venue`) recommends target venues.
+4. **KB Manager** (via `/mr combinations`) recomputes the idea hypergraph.
+5. **KB Manager** (via `/mr recommend-venue`) recommends target venues.
 
 ### Pre-Dispatch Context Injection
 
@@ -101,13 +101,13 @@ The orchestrator reads the active idea's `target_venue_tier` and `min_required_v
 
 After each agent completes:
 
-**If `/auto-store on`**: The orchestrator automatically dispatches kb-manager to store the delta.
+**If `/mr auto-store on`**: The orchestrator automatically dispatches kb-manager to store the delta.
 
-**If `/auto-store off`**: The orchestrator reminds the user. Manual `/store session info` is available.
+**If `/mr auto-store off`**: The orchestrator reminds the user. Manual `/mr store session info` is available.
 
 ### Cross-Session Continuity
 
-When starting a new session: orchestrator reads the most recent session entry and dispatches kb-manager with `/recall "active context for VLA-VLM"` to recover: open hypotheses, pending decisions, active ideas with their module compositions, unresolved questions, and recommended venues.
+When starting a new session: orchestrator reads the most recent session entry and dispatches kb-manager with `/mr recall "active context for VLA-VLM"` to recover: open hypotheses, pending decisions, active ideas with their module compositions, unresolved questions, and recommended venues.
 
 ## Global Commands
 
@@ -115,36 +115,36 @@ The following commands are available at any time regardless of domain:
 
 | Command | Agent | Function |
 |---------|-------|----------|
-| `/new-domain <name> "<desc>"` | domain-init | Create a new research domain |
-| `/ideas [--domain X] [--status Y]` | kb-manager | List ideas across domains |
+| `/mr new-domain <name> "<desc>"` | domain-init | Create a new research domain |
+| `/mr ideas [--domain X] [--status Y]` | kb-manager | List ideas across domains |
 | `/idea <slug>` | kb-manager | View detailed idea entry |
 | `/idea promote\|discard <slug>` | kb-manager | Change idea status |
-| `/modules [--domain X] [--category Y]` | kb-manager | Browse module library |
+| `/mr modules [--domain X] [--category Y]` | kb-manager | Browse module library |
 | `/module <slug>` | kb-manager | View module with source papers |
-| `/papers [--domain X] [--tier Y] [--code]` | kb-manager | List papers with filtering |
+| `/mr papers [--domain X] [--tier Y] [--code]` | kb-manager | List papers with filtering |
 | `/paper <slug>` | kb-manager | View paper with modules |
-| `/venues [--tier X] [--domain Y]` | kb-manager | Browse venue database |
+| `/mr venues [--tier X] [--domain Y]` | kb-manager | Browse venue database |
 | `/venue <slug>` | kb-manager | View venue with requirements |
-| `/status [--domain X]` | kb-manager | Pipeline overview |
-| `/search "query"` | kb-manager | Unified cross-KB search |
-| `/export idea\|bib <target>` | kb-manager | Export structured data |
-| `/store session info` | kb-manager | Persist session findings |
-| `/auto-store on/off` | kb-manager | Toggle autonomous storage |
-| `/recall "query"` | kb-manager | Retrieve KB context |
-| `/decompose <paper>` | kb-manager | Decompose paper into modules |
-| `/combinations` | kb-manager | Recompute idea hypergraph |
-| `/recommend-venue <idea>` | kb-manager | Recommend target venues |
-| `/kb-check` | kb-manager | Verify KB integrity |
-| `/fuse` | kb-manager | Consolidate related entries |
+| `/mr status [--domain X]` | kb-manager | Pipeline overview |
+| `/mr search "query"` | kb-manager | Unified cross-KB search |
+| `/mr export idea\|bib <target>` | kb-manager | Export structured data |
+| `/mr store session info` | kb-manager | Persist session findings |
+| `/mr auto-store on/off` | kb-manager | Toggle autonomous storage |
+| `/mr recall "query"` | kb-manager | Retrieve KB context |
+| `/mr decompose <paper>` | kb-manager | Decompose paper into modules |
+| `/mr combinations` | kb-manager | Recompute idea hypergraph |
+| `/mr recommend-venue <idea>` | kb-manager | Recommend target venues |
+| `/mr kb-check` | kb-manager | Verify KB integrity |
+| `/mr fuse` | kb-manager | Consolidate related entries |
 
 ## Support Commands
 
 ```
-/discuss "question" -> Agent(agents/deep-discussion.md, "Discussion on: $QUESTION")
-/write "section" -> "venue" -> Agent(agents/paper-writer.md, "Write $SECTION for $VENUE")
-/rebuttal <reviews> -> Agent(agents/rebuttal-writer.md, "Respond to reviews")
-/log -> Agent(agents/research-log.md, "Record daily entry")
-/present -> Agent(agents/presentation-builder.md, "Build presentation")
+/mr discuss "question" -> Agent(agents/deep-discussion.md, "Discussion on: $QUESTION")
+/mr write "section" -> "venue" -> Agent(agents/paper-writer.md, "Write $SECTION for $VENUE")
+/mr rebuttal <reviews> -> Agent(agents/rebuttal-writer.md, "Respond to reviews")
+/mr log -> Agent(agents/research-log.md, "Record daily entry")
+/mr present -> Agent(agents/presentation-builder.md, "Build presentation")
 ```
 
 ## Error Handling

@@ -13,7 +13,7 @@ session_ref: seed-data
 
 ## Purpose
 
-Different research directions target different venues. This document maps research domains to their primary, secondary, and fallback publication venues. The KB Manager's `/recommend-venue` operation uses this mapping to prioritize venues based on the research domain.
+Different research directions target different venues. This document maps research domains to their primary, secondary, and fallback publication venues. The KB Manager's `/mr recommend-venue` operation uses this mapping to prioritize venues based on the research domain.
 
 ## GNN — Graph Neural Networks
 
@@ -100,13 +100,13 @@ Different research directions target different venues. This document maps resear
 
 ## Usage by KB Manager
 
-When `/recommend-venue <idea>` is called, the KB Manager:
+When `/mr recommend-venue <idea>` is called, the KB Manager:
 1. Reads the idea's tags to determine the research direction.
 2. Consults this mapping to identify primary, secondary, and fallback venues.
 3. Cross-references with the venue database for tier, requirements, and review time.
 4. Returns ranked recommendations with justification.
 
-When a new domain is created via `/new-domain`, the domain-researcher agent identifies relevant venues and adds them to this mapping.
+When a new domain is created via `/mr new-domain`, the domain-researcher agent identifies relevant venues and adds them to this mapping.
 
 ## Auto-Discovery
 
