@@ -314,33 +314,11 @@ Any research field in CS/AI can be scaffolded. The system auto-generates: domain
 ## Requirements
 
 - Claude Code (primary) or other LLM coding agent
-- Python 3.8+ (for scripts)
-
-### Python Dependencies
-
-The scripts in `scripts/` require Python with the following packages:
+- Python 3.8+ with scikit-learn, scipy, matplotlib, numpy
 
 ```bash
-# Install dependencies
 pip install scikit-learn scipy matplotlib numpy
-
-# If 'pip: command not found', try:
-pip3 install scikit-learn scipy matplotlib numpy
-# or
-python3 -m pip install scikit-learn scipy matplotlib numpy
 ```
-
-Verify installation:
-```bash
-python3 -c "import sklearn, scipy, matplotlib, numpy; print('All dependencies OK')"
-```
-
-### Troubleshooting
-
-**`pip: command not found`**: Use `pip3` or `python3 -m pip` instead.
-**`python3: command not found`** (Windows): Install Python from [python.org](https://www.python.org/downloads/) (NOT the Microsoft Store version). Ensure "Add Python to PATH" is checked during installation.
-**`ModuleNotFoundError: No module named 'sklearn'`**: Run `pip install scikit-learn` (note: package name is `scikit-learn`, import name is `sklearn`).
-**SSL certificate errors** when fetching papers: Set `MOON_INSECURE_SSL=1` as an environment variable to bypass SSL verification in restricted network environments.
 
 ## Contributing
 
