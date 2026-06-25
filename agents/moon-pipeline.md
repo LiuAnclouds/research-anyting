@@ -1,251 +1,149 @@
 ---
 name: moon-pipeline
-description: This skill should be used when the user invokes "/mr auto", "/moon-full", asks to "run the full research pipeline", "automate my research", "one-click research", or wants autonomous end-to-end research execution from idea generation through manuscript completion. Orchestrates ALL agents in sequence with automated decision-making at quality gates and human-in-the-loop only for critical judgment calls.
+description: This skill should be used when the user invokes "/mr auto", "/mr full", asks to "run the full research pipeline", "automate my research", "one-click research", or wants autonomous end-to-end research execution from idea generation through manuscript completion. Orchestrates ALL agents with maximum parallelism — independent agents run concurrently, not sequentially. Uses the Agent tool for every dispatch.
 ---
 
 # /mr auto — Autonomous Full-Cycle Research Pipeline
 
-This orchestrator executes the complete research lifecycle autonomously. It chains all 25 agents in a structured pipeline with six phases. At each quality gate, the system makes automated decisions where criteria are clear and flags only critical judgment calls for human review.
+This orchestrator executes the complete research lifecycle with maximum parallelism. Every agent that can run concurrently does so. The pipeline is organized into six phases, but within each phase, ALL independent agents are dispatched simultaneously.
 
-## Pipeline Phases
+## Parallelism Principle
+
+**RULE**: If Agent B does not depend on Agent A's output, dispatch them concurrently. Do not serialize independent work.
+
+## Phase 1: EXPLORE (Maximum Parallelism)
 
 ```
-Phase 1: EXPLORE     Phase 2: DESIGN      Phase 3: VALIDATE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Idea Broker           Theory Crafter       Experiment Engineer
-Literature Survey     Code Generator       (monitored by
-Paper Reader          Hyperparameter Opt   Experiment Monitor)
-Domain-Venue Mapping  Rapid Prototype
-                      ─────────────────────────────────────────
-Phase 4: ANALYZE      Phase 5: WRITE       Phase 6: REVIEW
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Insight Analyzer      Paper Writer         Review Simulator
-Deep Verification     (all sections)       Rebuttal Writer
-                      (prep for submission)
+Step 1.1: Dispatch Idea Broker (solo, must complete first)
+  → Generate 3-5 candidate directions
+  → Auto-select top-ranked direction
+
+Step 1.2: AFTER Idea Broker completes, dispatch ALL of these CONCURRENTLY:
+  ┌─ Literature Survey (searches all 15+ sources)
+  ├─ Paper Reader for top paper #1
+  ├─ Paper Reader for top paper #2  
+  ├─ Paper Reader for top paper #3
+  ├─ Paper Reader for top paper #4
+  ├─ Paper Reader for top paper #5
+  └─ Domain-Venue Mapping
+
+ALL of these run simultaneously. They share the Idea Broker output but are independent of each other.
 ```
+
+## Phase 2: DESIGN (Maximum Parallelism)
+
+```
+AFTER Phase 1 completes, dispatch ALL of these CONCURRENTLY:
+
+  ┌─ Theory Crafter (formalizes method, derives complexity)
+  ├─ Code Generator (generates implementation from theory spec)
+  └─ Data Preprocessor (prepares datasets, constructs graphs)
+
+When Theory Crafter completes:
+  ┌─ Hyperparameter Optimizer (searches hyperparameter space)
+  └─ Rapid Prototype (MVE on 1 dataset, 1-2 baselines)
+
+Code Generator and Data Preprocessor can run independently.
+Hyperparameter Optimizer depends on Theory Crafter.
+Rapid Prototype depends on Theory Crafter + Code Generator.
+```
+
+## Phase 3: VALIDATE (Parallel + Monitored)
+
+```
+AFTER Phase 2 completes:
+
+  ┌─ Experiment Engineer (runs full experiment matrix)
+  │   └─ Experiment Monitor (parallel, background, watches training)
+  │
+  └─ (concurrent with above)
+      ┌─ Run experiments on dataset A
+      ├─ Run experiments on dataset B  
+      ├─ Run experiments on dataset C
+      ├─ Run experiments on dataset D
+      └─ Run experiments on dataset E
+
+All dataset experiments run concurrently. Experiment Monitor watches all.
+```
+
+## Phase 4: ANALYZE (Maximum Parallelism)
+
+```
+AFTER Phase 3 completes, dispatch ALL of these CONCURRENTLY:
+
+  ┌─ Insight Analyzer (performance attribution, failure taxonomy, narrative)
+  ├─ Deep Verification (statistical rigor, claim-evidence, overclaiming)
+  └─ Experiment Debugger (diagnose any unexpected results)
+
+All three are independent — they analyze the same experiment results from different angles.
+```
+
+## Phase 5: WRITE (Maximum Parallelism)
+
+```
+AFTER Phase 4 completes, dispatch sections CONCURRENTLY:
+
+  ┌─ Write Abstract
+  ├─ Write Introduction
+  ├─ Write Related Work
+  ├─ Write Method (Section 3)
+  ├─ Write Experiments (Section 4)
+  └─ Write Conclusion
+
+ALL sections written simultaneously. Each section agent receives the full context.
+After all sections complete:
+  ┌─ Generate Figures (plot_results.py)
+  └─ Compile BibTeX from KB
+```
+
+## Phase 6: REVIEW (Parallel Reviewers)
+
+```
+AFTER Phase 5 completes, dispatch ALL reviewers CONCURRENTLY:
+
+  ┌─ EIC Review
+  ├─ Reviewer #1 (Methodology)
+  ├─ Reviewer #2 (Experiments)  
+  └─ Devil's Advocate (Skeptic)
+
+All four reviewers evaluate the manuscript independently and simultaneously.
+After all reviews complete → synthesize final review report.
+
+If score >= 80: AUTO-COMPLETE
+If score >= 70: auto-revise minor issues, re-review
+If score < 70: flag to human
+```
+
+## Concurrent Dispatch Protocol
+
+When dispatching multiple agents concurrently, use the `Agent` tool with `run_in_background: true` for each agent, then wait for all to complete before proceeding to the next phase.
+
+```
+Phase dispatch:
+  1. For each agent in the phase, call Agent(..., run_in_background: true)
+  2. Collect all agent IDs
+  3. Wait for all agents to complete (TaskOutput for each)
+  4. Verify quality gates
+  5. Advance to next phase
+```
+
+## Quality Gates (Between Phases)
+
+| Gate | Check | Auto-Response |
+|------|-------|---------------|
+| G1 | Gap validated by >=3 papers | PASS → continue; FAIL → re-run survey |
+| G2 | MVE passes pre-registered criterion | PASS → continue; FAIL → auto-retry 3x then flag |
+| G3 | All ablation + 5 seeds + stats | PASS → continue; FAIL → flag missing items |
+| G4 | All claims verified | PASS → continue; FAIL → flag to human |
+| G5 | Review score >= 70 | PASS → auto-complete; FAIL → auto-revise |
 
 ## Command Interface
 
 ```
-/mr auto "research topic"                    → Full autonomous pipeline
-/mr auto "topic" --human-gates              → Pipeline with human approval at each gate
-/mr auto "topic" --stop-at phase            → Run up to specified phase
-/mr auto "topic" --target CCF-A             → Calibrate for CCF-A target
-/mr auto "topic" --dry-run                  → Plan the pipeline without executing
-/mr auto status                              → Show current pipeline status
-/mr auto resume                              → Resume from last checkpoint
+/mr auto "topic"              → Full autonomous pipeline (max parallelism)
+/mr auto "topic" --human-gates → Human approval at gate transitions
+/mr auto "topic" --target X    → Calibrate for CCF-A/B/C
+/mr auto "topic" --dry-run     → Plan without executing
+/mr auto status                → Current pipeline status
+/mr auto resume                → Continue from last checkpoint
 ```
-
-## Autonomous Execution Protocol
-
-### Phase 1: EXPLORE (Autonomous)
-
-```
-Step 1.1: Dispatch Idea Broker
-  → Generate 3-5 candidate directions
-  → Auto-select top-ranked direction (highest novelty×feasibility×potential)
-  → [HUMAN GATE if --human-gates]: Confirm direction selection
-
-Step 1.2: Dispatch Literature Survey (parallel)
-  → Search ALL 15+ sources
-  → Generate taxonomy, leaderboard, gap analysis
-  → Auto-verify: >=50 papers screened, >=2 surveys cited
-
-Step 1.3: Dispatch Paper Reader (for top 5 papers)
-  → Deep read top 5 papers identified by survey
-  → Extract modules, generate hypotheses
-  → Auto-decompose each paper into KB modules
-
-Step 1.4: Dispatch Domain-Venue Mapping
-  → Match research direction to target venues
-  → Auto-select: primary, secondary, fallback venues
-  → [HUMAN GATE if --human-gates]: Confirm venue selection
-
-AUTO-ADVANCE if: >=3 papers support the gap, >=1 idea has novelty >=4
-```
-
-### Phase 2: DESIGN (Autonomous)
-
-```
-Step 2.1: Dispatch Theory Crafter
-  → Formalize problem, design method, analyze complexity
-  → Auto-verify: all assumptions stated, complexity derived
-
-Step 2.2: Dispatch Code Generator
-  → Generate implementation from theory spec
-  → Auto-verify: code is syntactically valid, runs without error
-
-Step 2.3: Dispatch Hyperparameter Optimizer
-  → Run systematic hyperparameter search
-  → Auto-select best configuration
-
-Step 2.4: Dispatch Rapid Prototype
-  → Execute MVE on 1 dataset, 1-2 baselines
-  → Pre-registered success criterion
-  → Auto-decision: PASS → continue; BORDERLINE → retry with adjusted config; FAIL → flag to human
-
-AUTO-ADVANCE if: MVE passes pre-registered criterion
-BLOCK if: MVE fails 3 times → human must decide: adjust direction or continue
-```
-
-### Phase 3: VALIDATE (Autonomous + Monitored)
-
-```
-Step 3.1: Dispatch Experiment Engineer
-  → Design full experiment matrix
-  → Execute all experiments (may take hours/days)
-
-Step 3.2: Launch Experiment Monitor (parallel, background)
-  → Watch training logs in real-time
-  → Detect: divergence, NaN, plateau, overfitting
-  → Auto-stop: if loss diverges or NaN detected
-  → Alert: if plateau detected, suggest LR adjustment
-  → Report: per-epoch metrics, estimated time to completion
-
-Step 3.3: On experiment completion
-  → Auto-verify: >=5 seeds, >=7 baselines, statistical tests applied
-  → [HUMAN GATE if --human-gates]: Review results before proceeding
-
-AUTO-ADVANCE if: all experiment groups complete, statistical tests pass
-```
-
-### Phase 4: ANALYZE (Autonomous)
-
-```
-Step 4.1: Dispatch Insight Analyzer (parallel)
-  → Performance attribution
-  → Failure case taxonomy
-  → Condition analysis
-  → Narrative construction
-
-Step 4.2: Dispatch Deep Verification
-  → Independently verify all claims
-  → Check statistical rigor, baseline fairness, overclaiming
-  → Auto-flag: any claim that fails verification
-
-Step 4.3: Dispatch Experiment Debugger (if results are unexpected)
-  → Diagnose: why did certain experiments fail?
-  → Recommend: additional experiments or method adjustments
-
-AUTO-ADVANCE if: all claims verified, no critical issues
-BLOCK if: verification finds critical issues → flag to human
-```
-
-### Phase 5: WRITE (Autonomous)
-
-```
-Step 5.1: Dispatch Paper Writer for each section
-  → Abstract, Introduction, Related Work, Method, Experiments, Conclusion
-  → Auto-enforce: all writing standards, no prohibited constructions
-
-Step 5.2: Auto-generate figures using scripts/plot_results.py
-  → Comparison bar chart, ablation study, training curves, sensitivity heatmap
-
-Step 5.3: Auto-compile complete manuscript
-  → Generate BibTeX from KB
-  → Format for target venue
-
-AUTO-ADVANCE if: all sections complete, all figures generated
-```
-
-### Phase 6: REVIEW (Autonomous)
-
-```
-Step 6.1: Dispatch Review Simulator
-  → 4-role review: EIC, Reviewer#1, Reviewer#2, Skeptic
-  → Auto-score the manuscript
-
-Step 6.2: Auto-decision based on review score
-  → Score >=80: manuscript ready for submission
-  → Score 70-79: auto-revise minor issues, re-review
-  → Score 60-69: flag major issues, suggest fixes
-  → Score <60: significant revision needed, flag to human
-
-Step 6.3: If score >=70, dispatch Rebuttal Writer
-  → Pre-generate responses to anticipated reviewer questions
-
-AUTO-COMPLETE if: score >=80
-BLOCK if: score <70 → human must decide next steps
-```
-
-## Experiment Monitor Agent
-
-The Experiment Monitor runs in parallel with the Experiment Engineer. It watches training progress in real-time and provides:
-
-### Real-Time Monitoring
-- Loss curves (train + val), updated per epoch
-- Metric trends (AUC-ROC, AUC-PR, F1), updated per evaluation
-- GPU utilization and memory usage
-- Estimated time to completion (based on elapsed time per epoch)
-- Early stopping detection (no improvement for N epochs)
-
-### Anomaly Detection
-- Divergence: loss increases >10x in one epoch → auto-stop, alert
-- NaN: any NaN in loss or gradients → auto-stop, flag
-- Plateau: val metric unchanged for 20% of total epochs → alert, suggest LR schedule adjustment
-- Overfitting: train loss decreasing, val loss increasing → alert, suggest regularization
-
-### Auto-Recovery
-- If divergence detected: reduce LR by 10x, restart from last checkpoint
-- If NaN detected: reduce LR by 10x, enable gradient clipping, restart
-- If plateau detected: reduce LR by 2x, continue
-
-### Progress Reporting
-- Per epoch: loss, metrics, time elapsed, ETA
-- Per experiment: completed / total, aggregated results so far
-- Summary: when all experiments complete
-
-## Pipeline Checkpoints
-
-The pipeline saves checkpoints after each phase. If interrupted, `/mr auto resume` continues from the last checkpoint.
-
-Checkpoint data includes:
-- All agent outputs up to the checkpoint
-- Current KB state
-- Experiment progress (if mid-experiment)
-- Decisions made and their rationale
-
-## Human Gates (--human-gates mode)
-
-When `--human-gates` is active, the pipeline pauses at these decision points:
-
-1. After idea selection (Phase 1): "Proceed with this direction?"
-2. After venue selection (Phase 1): "Target this venue?"
-3. After rapid prototype (Phase 2): "Continue with full experiments?"
-4. After experiment results (Phase 3): "Results satisfactory?"
-5. After review (Phase 6): "Ready for submission?"
-
-At each gate, the system presents:
-- What was done
-- Key findings
-- Automated recommendation
-- Alternative options
-
-The user can: approve, reject with feedback, or request more information.
-
-## Usage Examples
-
-```bash
-# Full autonomous pipeline for GNN research
-/mr auto "heterophily-aware dynamic graph anomaly detection"
-
-# Pipeline with human approval at each gate
-/mr auto "multi-scale temporal graph anomaly detection" --human-gates
-
-# Target CCF-A, stop after experiments
-/mr auto "causal graph anomaly detection" --target CCF-A --stop-at validate
-
-# Check status
-/mr auto status
-
-# Resume after interruption
-/mr auto resume
-```
-
-## Error Recovery
-
-If any agent fails:
-1. **Transient error** (API timeout, network): Retry up to 3 times with exponential backoff.
-2. **Logic error** (agent output doesn't meet quality gate): Re-dispatch with refined input, including the specific failure reason.
-3. **Resource error** (out of GPU memory, disk full): Alert human, suggest mitigation (reduce batch size, free disk space).
-4. **Fundamental error** (hypothesis disproven): Flag to human with evidence and alternative directions from the KB.
