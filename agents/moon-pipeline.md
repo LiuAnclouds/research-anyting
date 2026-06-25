@@ -140,10 +140,20 @@ Phase dispatch:
 ## Command Interface
 
 ```
-/mr auto "topic"              → Full autonomous pipeline (max parallelism)
-/mr auto "topic" --human-gates → Human approval at gate transitions
-/mr auto "topic" --target X    → Calibrate for CCF-A/B/C
-/mr auto "topic" --dry-run     → Plan without executing
-/mr auto status                → Current pipeline status
-/mr auto resume                → Continue from last checkpoint
+/mr auto "topic"                → Full autonomous pipeline (max parallelism)
+/mr auto "topic" --parallel N   → Set max concurrent agents to N (default: unlimited)
+/mr auto "topic" --human-gates  → Human approval at gate transitions
+/mr auto "topic" --target X     → Calibrate for CCF-A/B/C
+/mr auto "topic" --dry-run      → Plan without executing
+/mr auto status                 → Current pipeline status
+/mr auto resume                 → Continue from last checkpoint
+```
+
+## Parallelism Control
+
+The `--parallel N` flag limits the maximum number of concurrent agents within a phase. If not specified, all independent agents run simultaneously.
+
+```
+/mr auto "topic" --parallel 3   → At most 3 agents run concurrently
+/mr auto "topic"                 → Unlimited parallelism (default)
 ```
