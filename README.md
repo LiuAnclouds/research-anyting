@@ -36,8 +36,14 @@ Exp Debugger         Figures + BibTeX     + Devil's Advocate
 ## Installation
 
 ```bash
-# Clone to Claude Code skills directory
-git clone https://github.com/LiuAnclouds/research-anything.git ~/.claude/skills/research-anything
+# Clone to Claude Code plugins directory
+git clone https://github.com/LiuAnclouds/research-anything.git ~/.claude/plugins/research-anything
+
+# Verify
+ls ~/.claude/plugins/research-anything/.claude-plugin/plugin.json
+```
+
+Claude Code automatically discovers plugins in `~/.claude/plugins/` by scanning for `.claude-plugin/plugin.json` files.
 
 # Verify
 ls ~/.claude/skills/research-anything/mr/SKILL.md
