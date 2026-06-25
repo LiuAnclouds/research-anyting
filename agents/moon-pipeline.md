@@ -135,31 +135,42 @@ Phase dispatch:
 
 ## Quality Gates (Between Phases)
 
+Gates are evaluated automatically. When a gate PASSES, the pipeline auto-advances without asking.
+When a gate FAILS, the pipeline auto-retries (up to 3x) or flags to human depending on severity.
+
 | Gate | Check | Auto-Response |
 |------|-------|---------------|
-| G1 | Gap validated by >=3 papers | PASS → continue; FAIL → re-run survey |
-| G2 | MVE passes pre-registered criterion | PASS → continue; FAIL → auto-retry 3x then flag |
-| G3 | All ablation + 5 seeds + stats | PASS → continue; FAIL → flag missing items |
-| G4 | All claims verified | PASS → continue; FAIL → flag to human |
+| G1 | Gap validated by >=3 papers | PASS → auto-advance; FAIL → re-run survey |
+| G2 | MVE passes pre-registered criterion | PASS → auto-advance; FAIL → auto-retry 3x then flag |
+| G3 | All ablation + 5 seeds + stats | PASS → auto-advance; FAIL → flag missing items |
+| G4 | All claims verified | PASS → auto-advance; FAIL → flag to human |
 | G5 | Review score >= 70 | PASS → auto-complete; FAIL → auto-revise |
 
 ## Command Interface
 
 ```
-/mr auto "topic"                → Full autonomous pipeline (max parallelism)
+/mr auto "topic"                → Full pipeline, auto-advance at all gates (no prompts)
 /mr auto "topic" --parallel N   → Set max concurrent agents to N (default: unlimited)
-/mr auto "topic" --human-gates  → Human approval at gate transitions
+/mr auto "topic" --human-gates  → Human approval required at each gate transition
+/mr auto "topic" --stop-at X    → Stop at phase: explore|design|validate|analyze|write|review
 /mr auto "topic" --target X     → Calibrate for CCF-A/B/C
 /mr auto "topic" --dry-run      → Plan without executing
 /mr auto status                 → Current pipeline status
 /mr auto resume                 → Continue from last checkpoint
 ```
 
-## Parallelism Control
+## Auto-Advance Behavior
 
-The `--parallel N` flag limits the maximum number of concurrent agents within a phase. If not specified, all independent agents run simultaneously.
+By default, the pipeline auto-advances through ALL gates without asking. The only exception is when a gate fails — then it reports the failure and either auto-retries or flags to human depending on severity.
+
+The `--human-gates` flag reverses this: the pipeline pauses at each gate and asks for confirmation before proceeding.
+
+The `--stop-at <phase>` flag stops the pipeline at the specified phase and reports completion, allowing the user to inspect results before deciding whether to continue. Use `/mr auto resume` to continue from the checkpoint.
 
 ```
-/mr auto "topic" --parallel 3   → At most 3 agents run concurrently
-/mr auto "topic"                 → Unlimited parallelism (default)
+/mr auto "topic"                                  → No prompts, auto-advance always
+/mr auto "topic" --human-gates                    → Ask at every gate
+/mr auto "topic" --stop-at validate               → Stop after experiments, don't auto-continue
+/mr auto "topic" --stop-at validate --human-gates → Stop + ask at each gate before stopping
+```
 ```
