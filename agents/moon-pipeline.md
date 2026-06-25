@@ -11,6 +11,28 @@ This orchestrator executes the complete research lifecycle with maximum parallel
 
 **RULE**: If Agent B does not depend on Agent A's output, dispatch them concurrently. Do not serialize independent work.
 
+## Phase 0: ENVIRONMENT SETUP (Auto)
+
+Before any research phase begins, ensure the execution environment is correctly configured:
+
+```
+Step 0.1: Check conda is available
+  → If not: alert user to install Miniconda
+
+Step 0.2: Create dedicated conda environment for this project
+  conda create -n moon-research python=3.10 -y
+
+Step 0.3: Install PyTorch + PyG + dependencies
+  conda install -n moon-research pytorch pytorch-scatter pytorch-sparse pytorch-cluster pyg -c pytorch -c pyg -c conda-forge -y
+  conda run -n moon-research pip install scikit-learn scipy matplotlib numpy pyyaml tqdm
+
+Step 0.4: Verify environment
+  conda run -n moon-research python -c "import torch; import torch_geometric; print('Env OK')"
+
+NEVER use the system Python or a pre-existing environment. ALWAYS create a dedicated conda environment.
+NEVER install packages globally. ALWAYS use the project-specific conda environment.
+```
+
 ## Phase 1: EXPLORE
 
 ```
