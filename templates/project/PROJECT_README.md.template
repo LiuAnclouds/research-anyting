@@ -1,0 +1,60 @@
+# {{PROJECT_NAME}}
+
+## Project Info
+- **Domain**: {{DOMAIN}}
+- **Created**: {{DATE}}
+- **Target Venue**: {{TARGET_VENUE}} ({{CCF_TIER}})
+- **Status**: {{STATUS}}
+
+## Hypothesis
+{{HYPOTHESIS}}
+
+## Directory Structure
+
+```
+{{PROJECT_NAME}}/
+├── README.md                   # This file
+├── config/                     # Experiment configurations
+│   └── default.yaml
+├── data/                       # Datasets (symlinked or downloaded)
+│   └── README.md
+├── src/                        # Source code
+│   ├── models/                 # Model definitions
+│   ├── data/                   # Data loading and preprocessing
+│   ├── training/               # Training scripts
+│   └── evaluation/             # Evaluation scripts
+├── experiments/                # Experiment outputs
+│   ├── logs/                   # Training logs
+│   ├── checkpoints/            # Model checkpoints
+│   └── results/                # Results files
+├── papers/                     # Related papers (PDFs + notes)
+├── notes/                      # Research notes
+│   ├── daily/                  # Daily logs
+│   └── ideas/                  # Idea scratchpad
+├── manuscript/                 # Paper manuscript
+│   ├── main.tex                # Main LaTeX file
+│   ├── sections/               # Section files
+│   ├── figures/                # Figures
+│   └── bib/                    # Bibliography
+└── knowledge-base/             # Project-specific KB (symlink to main KB)
+    └── README.md               # How to sync with main KB
+```
+
+## Quick Start
+
+```bash
+# Activate the research domain
+/mr {{DOMAIN}} idea "{{TOPIC}}"
+
+# Run experiments
+cd {{PROJECT_NAME}}
+python src/training/train.py --config config/default.yaml
+
+# Log daily progress
+/mr log
+```
+
+## Active Experiments
+
+| Experiment | Status | Key Result | Date |
+|-----------|--------|------------|------|

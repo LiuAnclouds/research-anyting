@@ -57,11 +57,38 @@ All Moon-Research commands use the `/mr` prefix. This prevents conflicts with ot
 ├── fuse                   → KB条目合并去重
 │
 ├── new-domain <name> "<desc>" → 创建新研究领域
-├── status [--domain]      → 管线概览
-├── log                    → 科研日志
-├── export <type> <target> → 导出数据
+├── init <project-name>     → 初始化项目目录
+├── status [--domain]       → 管线概览
+├── log                     → 科研日志
+├── export <type> <target>  → 导出数据
+├── config <key> <value>    → 配置系统参数
 │
-└── help                   → 显示命令参考
+└── help                    → 显示命令参考
+
+## Project Management
+
+When `/mr init <project-name>` is invoked, the project-init agent creates a fully scaffolded project directory at `~/research/<project-name>/` with:
+
+```
+~/research/<project-name>/
+├── README.md                  # Project overview + hypothesis
+├── config/default.yaml        # Experiment configuration
+├── src/                       # Source code (models, data, training, eval)
+├── data/                      # Datasets
+├── experiments/               # Outputs (logs, checkpoints, results)
+├── papers/                    # Related papers (PDFs + notes)
+├── notes/daily/               # Daily research logs
+├── manuscript/                # LaTeX manuscript
+└── .moon-kb/ -> ~/research/.moon-kb/   # Shared KB symlink
+```
+
+The shared knowledge base lives at `~/research/.moon-kb/` and is shared across all projects. If it doesn't exist, `/mr init` migrates the plugin's seed data there on first run.
+
+Default paths:
+- Projects: `~/research/`
+- Shared KB: `~/research/.moon-kb/`
+
+Override via `/mr config projects.root /path/to/projects` and `/mr config kb.root /path/to/kb`.`
 ```
 
 ## Dispatch Protocol
