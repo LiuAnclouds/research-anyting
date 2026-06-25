@@ -1,18 +1,11 @@
 ---
 name: mr-research
 description: This skill should be used when the user types "/mr" followed by any subcommand, or asks to use the Moon-Research system. The "/mr" prefix distinguishes all Moon-Research commands from other Claude Code plugins and built-in commands. Routes to domain-specific orchestrators (gnn, vla-vlm), knowledge base operations, support agents, and the autonomous pipeline.
-argument-hint: "[subcommand] [...args]"
 ---
 
 # /mr — Moon-Research Entry Point
 
 All Moon-Research commands use the `/mr` prefix. This prevents conflicts with other Claude Code plugins and built-in commands.
-
-## Command Parsing
-
-When invoked, `$ARGUMENTS` contains the subcommand and all its arguments. Parse `$ARGUMENTS` to extract the subcommand (first token) and remaining arguments. Route based on the subcommand as specified below.
-
-**IMPORTANT**: Every subcommand listed below MUST be handled. If the user types `/mr auto-store on`, parse subcommand=`auto-store`, args=`on`. Do not ignore unmatched subcommands — report "Unknown subcommand: X. Use /mr help for available commands."
 
 ## Command Routing
 
@@ -122,56 +115,27 @@ Supported flags:
 
 ### Knowledge Base Commands
 
-`/mr store session info` — dispatch kb-manager agent to extract and persist the current session delta.
-`/mr auto-store on` — enable autonomous KB storage after each agent completes.
-`/mr auto-store off` — disable autonomous KB storage.
-`/mr recall "query"` — dispatch kb-manager agent to retrieve relevant KB context.
-`/mr decompose <paper>` — dispatch kb-manager agent to decompose a paper into modules.
-`/mr combinations` — dispatch kb-manager agent to recompute the idea hypergraph.
-`/mr recommend-venue <idea>` — dispatch kb-manager agent to recommend target venues.
-`/mr kb-check` — dispatch kb-manager agent to verify KB integrity.
-`/mr fuse` — dispatch kb-manager agent to consolidate related entries.
+`/mr store`, `/mr recall`, `/mr auto-store`, `/mr decompose`, `/mr combinations`, `/mr recommend-venue`, `/mr kb-check`, `/mr fuse` all dispatch the kb-manager agent (`agents/kb-manager.md`).
 
 ### Support Commands
 
-`/mr discuss "question"` — dispatch deep-discussion agent.
-`/mr write "section" -> "venue"` — dispatch paper-writer agent.
-`/mr rebuttal <reviews>` — dispatch rebuttal-writer agent.
-`/mr log` — dispatch research-log agent.
-`/mr present` — dispatch presentation-builder agent.
+`/mr discuss`, `/mr write`, `/mr rebuttal`, `/mr log`, `/mr present` dispatch the corresponding shared agents.
 
 ### Browse Commands
 
-`/mr ideas [--domain X] [--status Y]` — dispatch kb-manager to list ideas.
-`/mr idea <slug>` — dispatch kb-manager to view idea detail.
-`/mr idea promote <slug>` — dispatch kb-manager to promote idea status.
-`/mr idea discard <slug>` — dispatch kb-manager to discard idea.
-`/mr modules [--domain X] [--category Y]` — dispatch kb-manager to browse modules.
-`/mr module <slug>` — dispatch kb-manager to view module detail.
-`/mr papers [--domain X] [--tier Y] [--code]` — dispatch kb-manager to list papers.
-`/mr paper <slug>` — dispatch kb-manager to view paper detail.
-`/mr venues [--tier X] [--domain Y]` — dispatch kb-manager to browse venues.
-`/mr venue <slug>` — dispatch kb-manager to view venue detail.
+`/mr ideas`, `/mr idea`, `/mr modules`, `/mr module`, `/mr papers`, `/mr paper`, `/mr venues`, `/mr venue` all dispatch the kb-manager agent with the appropriate query.
 
 ### Specialized Commands
 
-`/mr code-gen` — dispatch code-generator agent.
-`/mr hyperopt` — dispatch hyperparameter-optimizer agent.
-`/mr preprocess` — dispatch data-preprocessor agent.
-`/mr debug` — dispatch experiment-debugger agent.
-`/mr monitor` — dispatch experiment-monitor agent.
-`/mr alert` — dispatch literature-alert agent.
+`/mr code-gen`, `/mr hyperopt`, `/mr preprocess`, `/mr debug`, `/mr monitor`, `/mr alert` dispatch the corresponding specialized agents.
 
 ### Management Commands
 
-`/mr new-domain <name> "<desc>"` — dispatch domain-init orchestrator.
-`/mr init <project-name>` — dispatch project-init agent.
-`/mr status [--domain]` — dispatch kb-manager with status query.
-`/mr log` — dispatch research-log agent.
-`/mr export <type> <target>` — dispatch kb-manager with export query.
-`/mr search "query"` — dispatch kb-manager with unified search query.
-`/mr config <key> <value>` — update system configuration.
-`/mr help` — display command reference.
+`/mr new-domain` dispatches the domain-init orchestrator.
+`/mr status` dispatches kb-manager with a status query.
+`/mr log` dispatches the research-log agent.
+`/mr export` dispatches kb-manager with an export query.
+`/mr search` dispatches kb-manager with a unified search query.
 
 ## Why `/mr` Prefix
 
