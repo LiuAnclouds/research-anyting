@@ -37,18 +37,18 @@ Exp Debugger         Figures + BibTeX     + Devil's Advocate
 
 ```bash
 # Clone to Claude Code plugins directory
-git clone https://github.com/LiuAnclouds/research-anything.git ~/.claude/plugins/research-anything
+git clone https://github.com/LiuAnclouds/research-anyting.git ~/.claude/plugins/research-anyting
 
 # Verify
-ls ~/.claude/plugins/research-anything/.claude-plugin/plugin.json
+ls ~/.claude/plugins/research-anyting/.claude-plugin/plugin.json
 ```
 
 Claude Code automatically discovers plugins in `~/.claude/plugins/` by scanning for `.claude-plugin/plugin.json` files.
 
 # Verify
-ls ~/.claude/skills/research-anything/mr/SKILL.md
-ls ~/.claude/skills/research-anything/gnn/SKILL.md
-ls ~/.claude/skills/research-anything/vla-vlm/SKILL.md
+ls ~/.claude/skills/research-anyting/mr/SKILL.md
+ls ~/.claude/skills/research-anyting/gnn/SKILL.md
+ls ~/.claude/skills/research-anyting/vla-vlm/SKILL.md
 ```
 
 Claude Code automatically discovers skills by scanning for `SKILL.md` files.
@@ -76,7 +76,7 @@ Claude Code automatically discovers skills by scanning for `SKILL.md` files.
 ## Architecture
 
 ```
-research-anything/
+research-anyting/
 ├── mr/SKILL.md                    # Top-level entry point (/mr)
 ├── agents/                        # 27 agent definitions
 │   ├── gnn-*.md                   # GNN domain-specific (3)
