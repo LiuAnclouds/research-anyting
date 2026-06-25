@@ -47,22 +47,24 @@ Idea Broker ────→  Theory Crafter ────→ Experiment Engineer
 ### Claude Code（推荐）
 
 ```bash
+# 克隆仓库
 git clone https://github.com/LiuAnclouds/research-anyting.git ~/.claude/plugins/research-anyting
 
-# 验证
-ls ~/.claude/plugins/research-anyting/.claude-plugin/plugin.json
-ls ~/.claude/plugins/research-anyting/mr/SKILL.md
+# 注册 Skill（命令发现必需）
+mkdir -p ~/.claude/skills/mr
+cp ~/.claude/plugins/research-anyting/skills/mr/SKILL.md ~/.claude/skills/mr/SKILL.md
 ```
 
-Claude Code 会自动扫描 `~/.claude/plugins/` 目录，发现 `.claude-plugin/plugin.json` 文件后自动加载。重启 Claude Code 或执行 `/reload-plugins`。
+重启 Claude Code 或执行 `/reload-plugins`。输入 `/mr help` 验证安装。
+
+> **说明**：插件系统（`~/.claude/plugins/`）管理 Agent、脚本和知识库。Skill 系统（`~/.claude/skills/`）负责命令发现。`mr` Skill 需要在两个位置都注册才能完整工作。
 
 ### Codex CLI
 
 ```bash
 git clone https://github.com/LiuAnclouds/research-anyting.git ~/.codex/plugins/research-anyting
-
-# 或从 Claude Code 安装目录软链接
-ln -s ~/.claude/plugins/research-anyting ~/.codex/plugins/research-anyting
+mkdir -p ~/.codex/skills/mr
+cp ~/.codex/plugins/research-anyting/skills/mr/SKILL.md ~/.codex/skills/mr/SKILL.md
 ```
 
 ### Cursor / Windsurf

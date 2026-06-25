@@ -47,22 +47,25 @@ Experiment Debugger   Figures + BibTeX       + Devil's Advocate
 ### Claude Code (Recommended)
 
 ```bash
+# Clone the repository
 git clone https://github.com/LiuAnclouds/research-anyting.git ~/.claude/plugins/research-anyting
 
-# Verify
-ls ~/.claude/plugins/research-anyting/.claude-plugin/plugin.json
-ls ~/.claude/plugins/research-anyting/mr/SKILL.md
+# Register the skill (required for command discovery)
+mkdir -p ~/.claude/skills/mr
+cp ~/.claude/plugins/research-anyting/skills/mr/SKILL.md ~/.claude/skills/mr/SKILL.md
 ```
 
-Claude Code automatically discovers plugins in `~/.claude/plugins/` by scanning for `.claude-plugin/plugin.json` files. Restart Claude Code or run `/reload-plugins`.
+Then restart Claude Code or run `/reload-plugins`. Verify with `/mr help`.
+
+> **Note**: The plugin system (`~/.claude/plugins/`) manages agents, scripts, and the knowledge base. The skill system (`~/.claude/skills/`) handles command discovery. The `mr` skill must be registered in both locations for full functionality.
 
 ### Codex CLI
 
 ```bash
 git clone https://github.com/LiuAnclouds/research-anyting.git ~/.codex/plugins/research-anyting
-
-# Or symlink from Claude Code installation
-ln -s ~/.claude/plugins/research-anyting ~/.codex/plugins/research-anyting
+mkdir -p ~/.codex/skills/mr
+cp ~/.codex/plugins/research-anyting/skills/mr/SKILL.md ~/.codex/skills/mr/SKILL.md
+```
 ```
 
 ### Cursor / Windsurf
