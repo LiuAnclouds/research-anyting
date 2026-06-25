@@ -33,7 +33,51 @@ mkdir -p $PROJECT_PATH/{config,data,src/{models,data,training,evaluation},experi
 
 **File 1: `README.md`** — Project overview from template `templates/project/PROJECT_README.md.template`, populated with project metadata.
 
-**File 2: `config/default.yaml`** — Default experiment configuration:
+**File 2: `environment.yml`** — Conda environment specification:
+```yaml
+name: $PROJECT_NAME
+channels:
+  - pytorch
+  - pyg
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - pytorch>=2.0
+  - pytorch-scatter
+  - pytorch-sparse
+  - pytorch-cluster
+  - pyg>=2.4
+  - numpy
+  - scipy
+  - scikit-learn
+  - matplotlib
+  - pandas
+  - pyyaml
+  - pip:
+    - tensorboard
+    - tqdm
+```
+
+**File 3: `requirements.txt`** — Pip fallback:
+```
+torch>=2.0
+torch-scatter
+torch-sparse
+torch-cluster
+torch-geometric>=2.4
+numpy
+scipy
+scikit-learn
+matplotlib
+pandas
+pyyaml
+tensorboard
+tqdm
+```
+
+**File 4: `config/default.yaml`** — Default experiment configuration:
 ```yaml
 project: $PROJECT_NAME
 domain: $DOMAIN
@@ -61,34 +105,56 @@ evaluation:
   metrics: [auc_roc, auc_pr, f1, precision_at_k, recall_at_k]
 ```
 
-**File 3: `src/training/train.py`** — Skeleton training script with command-line interface.
+**File 5: `src/training/train.py`** — Skeleton training script with command-line interface.
 
-**File 4: `.gitignore`** — Standard ignores for data, checkpoints, logs.
-
-### Step 4: Link to Shared KB
-
-Create a symlink from `$PROJECT_PATH/.moon-kb` to the shared KB:
-
-```bash
-# Ensure shared KB exists
-mkdir -p $KB_ROOT
-
-# If KB is currently embedded in plugin, migrate it
-if [ -d "$PLUGIN_ROOT/knowledge-base" ] && [ ! "$(ls -A $KB_ROOT 2>/dev/null)" ]; then
-  cp -r $PLUGIN_ROOT/knowledge-base/* $KB_ROOT/
-fi
-
-# Create symlink
-ln -s $KB_ROOT $PROJECT_PATH/.moon-kb
+**File 6: `.gitignore`** — Standard ignores for data, checkpoints, logs, conda envs:
+```
+data/
+experiments/logs/
+experiments/checkpoints/
+__pycache__/
+*.pyc
+.env
 ```
 
-### Step 5: Initialize Git
+### Step 4: Create Conda Environment
+
+```bash
+cd $PROJECT_PATH && conda env create -f environment.yml
+```
+
+If conda is not available, fall back to pip:
+```bash
+cd $PROJECT_PATH && pip install -r requirements.txt
+```
+
+Report which method was used and the environment name.
+
+### Step 5: Initialize Git and GitHub
 
 ```bash
 cd $PROJECT_PATH && git init && git add -A && git commit -m "Initial commit: $PROJECT_NAME research project"
 ```
 
-### Step 6: Report
+Then create a GitHub repository:
+```bash
+gh repo create $PROJECT_NAME --private --source=. --push --description "Research project: $HYPOTHESIS"
+```
+
+If `gh` is not authenticated, instruct the user:
+> Run `gh auth login` to authenticate with GitHub, then re-run `/mr init $PROJECT_NAME`.
+
+### Step 6: Link to Shared KB
+
+```bash
+mkdir -p $KB_ROOT
+if [ -d "$PLUGIN_ROOT/knowledge-base" ] && [ ! "$(ls -A $KB_ROOT 2>/dev/null)" ]; then
+  cp -r $PLUGIN_ROOT/knowledge-base/* $KB_ROOT/
+fi
+ln -s $KB_ROOT $PROJECT_PATH/.moon-kb
+```
+
+### Step 7: Report
 
 ```markdown
 # Project Initialized: $PROJECT_NAME
