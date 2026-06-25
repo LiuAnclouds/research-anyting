@@ -11,107 +11,113 @@ This orchestrator executes the complete research lifecycle with maximum parallel
 
 **RULE**: If Agent B does not depend on Agent A's output, dispatch them concurrently. Do not serialize independent work.
 
-## Phase 1: EXPLORE (Maximum Parallelism)
+## Phase 1: EXPLORE
 
 ```
 Step 1.1: Dispatch Idea Broker (solo, must complete first)
-  → Generate 3-5 candidate directions
-  → Auto-select top-ranked direction
+  → Output: 3-5 candidate directions, auto-selected top direction
 
 Step 1.2: AFTER Idea Broker completes, dispatch ALL of these CONCURRENTLY:
-  ┌─ Literature Survey (searches all 15+ sources)
-  ├─ Paper Reader for top paper #1
-  ├─ Paper Reader for top paper #2  
-  ├─ Paper Reader for top paper #3
-  ├─ Paper Reader for top paper #4
-  ├─ Paper Reader for top paper #5
+  ┌─ Literature Survey
+  ├─ Paper Reader for paper #1
+  ├─ Paper Reader for paper #2
+  ├─ Paper Reader for paper #3
+  ├─ Paper Reader for paper #4
+  ├─ Paper Reader for paper #5
   └─ Domain-Venue Mapping
-
-ALL of these run simultaneously. They share the Idea Broker output but are independent of each other.
 ```
+
+**Concurrent dispatch**: Call `Agent()` for each of the 7 agents with `run_in_background: true`, then use `TaskOutput()` to wait for all.```
 
 ## Phase 2: DESIGN (Maximum Parallelism)
 
 ```
-AFTER Phase 1 completes, dispatch ALL of these CONCURRENTLY:
+Step 2.1: FIRST dispatch Theory Crafter (solo - must complete first, others depend on it)
+  → Theory Crafter produces: formal problem definition, algorithm design, complexity analysis
 
-  ┌─ Theory Crafter (formalizes method, derives complexity)
-  ├─ Code Generator (generates implementation from theory spec)
-  └─ Data Preprocessor (prepares datasets, constructs graphs)
+Step 2.2: AFTER Theory Crafter completes, dispatch ALL of these CONCURRENTLY:
+  ┌─ Code Generator (generates implementation from theory spec)
+  ├─ Data Preprocessor (prepares datasets, constructs graphs)
+  └─ Hyperparameter Optimizer (searches hyperparameter space)
 
-When Theory Crafter completes:
-  ┌─ Hyperparameter Optimizer (searches hyperparameter space)
-  └─ Rapid Prototype (MVE on 1 dataset, 1-2 baselines)
+When Code Generator completes:
+  └─ Rapid Prototype (MVE on 1 dataset, 1-2 baselines — depends on code being generated)
 
-Code Generator and Data Preprocessor can run independently.
-Hyperparameter Optimizer depends on Theory Crafter.
-Rapid Prototype depends on Theory Crafter + Code Generator.
+Step 2.2 agents are independent of each other. Dispatch them ALL simultaneously using run_in_background: true.
 ```
 
-## Phase 3: VALIDATE (Parallel + Monitored)
+## Concurrent Dispatch Protocol
+
+**THIS IS CRITICAL**: When dispatching multiple independent agents, you MUST use `run_in_background: true` for EVERY agent. Do NOT dispatch them sequentially. The pattern is:
 
 ```
-AFTER Phase 2 completes:
-
-  ┌─ Experiment Engineer (runs full experiment matrix)
-  │   └─ Experiment Monitor (parallel, background, watches training)
-  │
-  └─ (concurrent with above)
-      ┌─ Run experiments on dataset A
-      ├─ Run experiments on dataset B  
-      ├─ Run experiments on dataset C
-      ├─ Run experiments on dataset D
-      └─ Run experiments on dataset E
-
-All dataset experiments run concurrently. Experiment Monitor watches all.
+1. Call Agent(agent1, ..., run_in_background: true) → returns agentId1
+2. Call Agent(agent2, ..., run_in_background: true) → returns agentId2
+3. Call Agent(agent3, ..., run_in_background: true) → returns agentId3
+4. For each agentId, use TaskOutput(agentId) to wait for completion
+5. Collect all results, then proceed to next phase
 ```
 
-## Phase 4: ANALYZE (Maximum Parallelism)
-
+**DO NOT** do this:
 ```
-AFTER Phase 3 completes, dispatch ALL of these CONCURRENTLY:
-
-  ┌─ Insight Analyzer (performance attribution, failure taxonomy, narrative)
-  ├─ Deep Verification (statistical rigor, claim-evidence, overclaiming)
-  └─ Experiment Debugger (diagnose any unexpected results)
-
-All three are independent — they analyze the same experiment results from different angles.
+❌ Agent(agent1) → wait → Agent(agent2) → wait → Agent(agent3)   (sequential, wastes time)
 ```
 
-## Phase 5: WRITE (Maximum Parallelism)
+**DO** this:
+```
+✅ Agent(agent1, ..., run_in_background: true)  ─┐
+✅ Agent(agent2, ..., run_in_background: true)  ─┤ all run simultaneously
+✅ Agent(agent3, ..., run_in_background: true)  ─┘
+   Then wait for all to complete
+```
+
+## Phase 3: VALIDATE
 
 ```
-AFTER Phase 4 completes, dispatch sections CONCURRENTLY:
+Step 3.1: Dispatch Experiment Engineer (orchestrates experiment execution)
+  → Runs full experiment matrix: 5 datasets × 7+ baselines × 5 seeds
 
+Step 3.2: (parallel with Step 3.1) Dispatch Experiment Monitor
+  → Watches training logs in real-time, detects anomalies, auto-recovers
+
+Within Experiment Engineer, ALL dataset experiments run CONCURRENTLY:
+  ┌─ Experiment on dataset A
+  ├─ Experiment on dataset B
+  ├─ Experiment on dataset C
+  ├─ Experiment on dataset D
+  └─ Experiment on dataset E
+```
+
+## Phase 4: ANALYZE
+
+```
+AFTER Phase 3 completes, dispatch ALL three CONCURRENTLY:
+  ┌─ Insight Analyzer
+  ├─ Deep Verification
+  └─ Experiment Debugger
+```
+
+## Phase 5: WRITE
+
+```
+AFTER Phase 4 completes, dispatch ALL sections CONCURRENTLY:
   ┌─ Write Abstract
   ├─ Write Introduction
   ├─ Write Related Work
-  ├─ Write Method (Section 3)
-  ├─ Write Experiments (Section 4)
+  ├─ Write Method
+  ├─ Write Experiments
   └─ Write Conclusion
-
-ALL sections written simultaneously. Each section agent receives the full context.
-After all sections complete:
-  ┌─ Generate Figures (plot_results.py)
-  └─ Compile BibTeX from KB
 ```
 
-## Phase 6: REVIEW (Parallel Reviewers)
+## Phase 6: REVIEW
 
 ```
-AFTER Phase 5 completes, dispatch ALL reviewers CONCURRENTLY:
-
+AFTER Phase 5 completes, dispatch ALL four reviewers CONCURRENTLY:
   ┌─ EIC Review
   ├─ Reviewer #1 (Methodology)
-  ├─ Reviewer #2 (Experiments)  
-  └─ Devil's Advocate (Skeptic)
-
-All four reviewers evaluate the manuscript independently and simultaneously.
-After all reviews complete → synthesize final review report.
-
-If score >= 80: AUTO-COMPLETE
-If score >= 70: auto-revise minor issues, re-review
-If score < 70: flag to human
+  ├─ Reviewer #2 (Experiments)
+  └─ Devil's Advocate
+```
 ```
 
 ## Concurrent Dispatch Protocol
