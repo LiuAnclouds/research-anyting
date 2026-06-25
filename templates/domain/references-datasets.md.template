@@ -1,0 +1,14 @@
+# {{FIELD_TITLE}} Benchmark Datasets
+
+## Dataset Catalog
+[Populated by domain-researcher agent during /new-domain]
+
+## Selection Requirements
+- CCF-B minimum: 4-5 datasets from >=3 domains
+- CCF-A: 6-8 datasets from >=4 domains
+
+## Dataset Statistics
+[Populated by domain-researcher agent]
+
+## Synthetic Data Generation
+[Domain-specific protocols, if applicable]

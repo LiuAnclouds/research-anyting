@@ -1,0 +1,152 @@
+---
+name: mr-vlavlm-research
+description: This skill should be used when the user types "/mr vla-vlm", "/mr vla", "/mr vlm", or references vision-language-action models, embodied AI, robot foundation models, multimodal LLMs, vision-language models, or mentions specific VLA/mr vlm methods. Orchestrates a multi-agent research pipeline. All commands use "/mr vla-vlm", "/mr vla", or "/mr vlm" prefix.
+---
+
+# VLA/mr vlm Research Domain Orchestrator
+
+This orchestrator manages a multi-agent research pipeline for VLA and VLM research. The pipeline architecture mirrors the GNN domain but applies VLA/VLM-specific knowledge and evaluation protocols. Agents whose logical structure is identical to GNN counterparts (literature-survey, paper-reader, theory-crafter, experiment-engineer, deep-verification, review-simulator) share the GNN agent definition files but are dispatched with VLA/mr vlm domain knowledge loaded from `vla-vlm/references/`. Domain-specific agents (idea-broker, rapid-prototype, insight-analyzer) have dedicated definitions.
+
+## Command Routing
+
+| Command | Agent Definition | Domain Knowledge |
+|---------|-----------------|------------------|
+| `/mr vla-vlm idea "topic"` | agents/vlavlm-idea-broker.md | vla-vlm/references/ |
+| `/mr vla-vlm survey "topic"` | agents/literature-survey.md | vla-vlm/references/ |
+| `/mr vla-vlm read <paper>` | agents/paper-reader.md | vla-vlm/references/ |
+| `/mr vla-vlm theory` | agents/theory-crafter.md | vla-vlm/references/ |
+| `/mr vla-vlm prototype` | agents/vlavlm-rapid-prototype.md | vla-vlm/references/ |
+| `/mr vla-vlm experiment` | agents/experiment-engineer.md | vla-vlm/references/ |
+| `/mr vla-vlm analyze` | agents/vlavlm-insight-analyzer.md | vla-vlm/references/ |
+| `/mr vla-vlm verify` | agents/deep-verification.md | vla-vlm/references/ |
+| `/mr vla-vlm review` | agents/review-simulator.md | vla-vlm/references/ |
+
+Sub-domain routing: `/mr vla <cmd>` restricts knowledge to VLA references only. `/mr vlm <cmd>` restricts to VLM references only.
+
+## Agent Dispatch Protocol
+
+Each command dispatches a subagent using the `Agent` tool, following the same pattern as the GNN orchestrator. The agent definition file path and domain knowledge paths are specified in the table above.
+
+### Domain-Specific Context Injection
+
+When dispatching an agent that shares a GNN definition file, append VLA/VLM-specific context to the dispatch prompt:
+
+> **Domain**: VLA, VLM, or VLA+VLM (as specified by user).
+> **Domain knowledge**: Load from `vla-vlm/references/papers-vla.md`, `vla-vlm/references/papers-vlm.md`, and `vla-vlm/references/benchmarks.md`.
+> **Evaluation protocols**: VLA-specific (LIBERO, CALVIN, SimplerEnv; sim-to-real gap quantification; embodiment diversity requirements) or VLM-specific (MME, MMBench, SEED-Bench, MM-Vet, POPE, HallusionBench; hallucination decomposition; prompt sensitivity analysis), as specified in `shared/references/evaluation-protocols.md`.
+
+### Phase 1: Idea Generation
+
+When the user invokes `/mr vla-vlm idea "topic"`:
+
+**Step 1**: Dispatch the vlavlm-idea-broker subagent using the `Agent` tool.
+
+Use the agent definition at `agents/vlavlm-idea-broker.md`. Pass the following context:
+
+> Research area: `$TOPIC`
+> Sub-domain preference: VLA | VLM | both
+>
+> Instructions:
+> 1. Load domain knowledge from `vla-vlm/references/papers-vla.md`, `vla-vlm/references/papers-vlm.md`, and `vla-vlm/references/benchmarks.md`.
+> 2. Construct a literature tree for the specified area, sub-domain filtered.
+> 3. Apply challenge-insight mapping and technology transfer assessment.
+> 4. Generate 3-5 candidate research directions, each with a falsifiable hypothesis, novelty assessment citing at least 3 specific papers, feasibility assessment with resource estimates, and impact assessment with target venue evidence.
+> 5. Produce a structured Idea Broker Report.
+
+After the subagent completes, verify: each direction has a falsifiable hypothesis, at least 3 cited papers establishing the gap, and specific evidence for novelty/feasibility/impact scores.
+
+### Phase 2-9: [Same dispatch pattern as GNN orchestrator for all remaining phases]
+
+## Multi-Agent Pipeline: `/mr vla-vlm full "hypothesis"`
+
+Same sequential dispatch pattern as GNN full pipeline, with VLA/VLM-specific quality gates inserted at appropriate transitions.
+
+## Knowledge Base Integration
+
+### Paper → Module → Idea Pipeline
+
+1. **Paper Reader agent** produces structured paper notes and stores the paper entry in `knowledge-base/papers/vla-vlm/`.
+2. **KB Manager** (via `/decompose`) decomposes the paper into constituent modules — visual encoder, projector, action head, and training recipe — and stores each module in `knowledge-base/modules/vla-vlm/`. If an equivalent module already exists from another paper, the evidence is merged and validation status is upgraded.
+3. **KB Manager** recomputes module composability.
+4. **KB Manager** (via `/combinations`) recomputes the idea hypergraph.
+5. **KB Manager** (via `/recommend-venue`) recommends target venues.
+
+### Pre-Dispatch Context Injection
+
+Before dispatching any research agent, the orchestrator queries the KB for relevant context:
+
+1. Read `knowledge-base/sessions/INDEX.md` to identify the most recent session in the VLA-VLM domain.
+2. Read `knowledge-base/ideas/INDEX.md` to identify active ideas and their hyperedge relationships.
+3. For paper-related tasks: read `knowledge-base/papers/INDEX.md` and `knowledge-base/modules/INDEX.md` to check what has already been catalogued.
+4. Inject a condensed KB context summary (<=500 words) into the agent's dispatch prompt.
+
+### Difficulty-Adaptive Workflow
+
+The orchestrator reads the active idea's `target_venue_tier` and `min_required_validation` fields to calibrate the pipeline:
+
+| Tier | Experiment Engineer | Theory Crafter | Review Simulator |
+|------|-------------------|----------------|------------------|
+| CCF-A | 6-8 benchmarks, 10+ baselines | Theory required (>=1 proof) | 4-role review calibrated to CCF-A |
+| CCF-B | 4-5 benchmarks, 7+ baselines | Theory preferred | 4-role review calibrated to CCF-B |
+| CCF-C | 3-4 benchmarks, 5+ baselines | Theory optional | Streamlined review |
+
+### VLA/VLM-Specific Quality Gates
+
+- **VLA-G1**: Sim-to-real gap quantified when real-world applicability is claimed. Gap must not exceed 15 percentage points without explanation.
+- **VLA-G2**: Embodiment diversity verified. Claims of generalist capability require evaluation on >=3 robot morphologies.
+- **VLM-G1**: Hallucination decomposed by type (object, attribute, relation, OCR). Overall hallucination rate alone is insufficient.
+- **VLM-G2**: Prompt sensitivity analyzed. Results must be stable across >=5 prompt variations (standard deviation <2 percentage points).
+
+### Post-Dispatch Storage
+
+After each agent completes:
+
+**If `/auto-store on`**: The orchestrator automatically dispatches kb-manager to store the delta.
+
+**If `/auto-store off`**: The orchestrator reminds the user. Manual `/store session info` is available.
+
+### Cross-Session Continuity
+
+When starting a new session: orchestrator reads the most recent session entry and dispatches kb-manager with `/recall "active context for VLA-VLM"` to recover: open hypotheses, pending decisions, active ideas with their module compositions, unresolved questions, and recommended venues.
+
+## Global Commands
+
+The following commands are available at any time regardless of domain:
+
+| Command | Agent | Function |
+|---------|-------|----------|
+| `/new-domain <name> "<desc>"` | domain-init | Create a new research domain |
+| `/ideas [--domain X] [--status Y]` | kb-manager | List ideas across domains |
+| `/idea <slug>` | kb-manager | View detailed idea entry |
+| `/idea promote\|discard <slug>` | kb-manager | Change idea status |
+| `/modules [--domain X] [--category Y]` | kb-manager | Browse module library |
+| `/module <slug>` | kb-manager | View module with source papers |
+| `/papers [--domain X] [--tier Y] [--code]` | kb-manager | List papers with filtering |
+| `/paper <slug>` | kb-manager | View paper with modules |
+| `/venues [--tier X] [--domain Y]` | kb-manager | Browse venue database |
+| `/venue <slug>` | kb-manager | View venue with requirements |
+| `/status [--domain X]` | kb-manager | Pipeline overview |
+| `/search "query"` | kb-manager | Unified cross-KB search |
+| `/export idea\|bib <target>` | kb-manager | Export structured data |
+| `/store session info` | kb-manager | Persist session findings |
+| `/auto-store on/off` | kb-manager | Toggle autonomous storage |
+| `/recall "query"` | kb-manager | Retrieve KB context |
+| `/decompose <paper>` | kb-manager | Decompose paper into modules |
+| `/combinations` | kb-manager | Recompute idea hypergraph |
+| `/recommend-venue <idea>` | kb-manager | Recommend target venues |
+| `/kb-check` | kb-manager | Verify KB integrity |
+| `/fuse` | kb-manager | Consolidate related entries |
+
+## Support Commands
+
+```
+/discuss "question" -> Agent(agents/deep-discussion.md, "Discussion on: $QUESTION")
+/write "section" -> "venue" -> Agent(agents/paper-writer.md, "Write $SECTION for $VENUE")
+/rebuttal <reviews> -> Agent(agents/rebuttal-writer.md, "Respond to reviews")
+/log -> Agent(agents/research-log.md, "Record daily entry")
+/present -> Agent(agents/presentation-builder.md, "Build presentation")
+```
+
+## Error Handling
+
+If a dispatched agent produces output that does not meet its quality requirements, the orchestrator must either request re-execution with refined input, or document the failure and its implications. If an agent encounters a fundamentally unresolved issue, the orchestrator may route back to an earlier phase or recommend terminating the direction.

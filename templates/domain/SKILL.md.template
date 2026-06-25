@@ -1,0 +1,93 @@
+---
+name: {{SHORT_NAME}}-research
+description: This skill should be used when the user invokes "/{{UPPER_NAME}}", references {{FIELD_DESCRIPTION}}, or mentions specific methods from this field. Orchestrates a multi-agent research pipeline where each phase dispatches a specialized subagent using the Agent tool.
+---
+
+# /{{UPPER_NAME}} — {{FIELD_TITLE}} Research Domain
+
+## Command Routing
+
+### Research Commands
+| Command | Agent Dispatched | Phase |
+|---------|-----------------|-------|
+| `/{{UPPER_NAME}} idea "topic"` | {{SHORT_NAME}}-idea-broker | Exploration |
+| `/{{UPPER_NAME}} survey "topic"` | literature-survey (shared) | Exploration |
+| `/{{UPPER_NAME}} read <paper>` | paper-reader (shared) | Exploration |
+| `/{{UPPER_NAME}} theory` | theory-crafter (shared) | Construction |
+| `/{{UPPER_NAME}} prototype "approach"` | {{SHORT_NAME}}-rapid-prototype | Construction |
+| `/{{UPPER_NAME}} experiment` | experiment-engineer (shared) | Construction |
+| `/{{UPPER_NAME}} analyze <results>` | {{SHORT_NAME}}-insight-analyzer | Validation |
+| `/{{UPPER_NAME}} verify` | deep-verification (shared) | Validation |
+| `/{{UPPER_NAME}} review <manuscript>` | review-simulator (shared) | Validation |
+| `/{{UPPER_NAME}} explore "topic"` | idea-broker -> survey -> paper-reader (sequential) | Full Exploration |
+| `/{{UPPER_NAME}} full "hypothesis"` | All agents with quality gates | Full Pipeline |
+
+### Knowledge Base Commands
+[Same as all domains — see gnn/SKILL.md for complete KB command table]
+
+### Support Commands
+`/discuss`, `/write`, `/rebuttal`, `/log`, `/present`
+
+## Agent Dispatch Protocol
+
+### Phase 1: Idea Generation (`/{{UPPER_NAME}} idea "topic"`)
+
+Dispatch the {{SHORT_NAME}}-idea-broker subagent using the `Agent` tool. Use the agent definition at `agents/{{SHORT_NAME}}-idea-broker.md`. Pass the following context:
+
+> Research area: `$TOPIC`
+>
+> Instructions:
+> 1. Load domain knowledge from `{{SHORT_NAME}}/references/`.
+> 2. Construct a literature tree for the specified area.
+> 3. Apply challenge-insight mapping and technology transfer assessment.
+> 4. Generate 3-5 candidate research directions, each with a falsifiable hypothesis, novelty assessment citing at least 3 specific papers, feasibility assessment with resource estimates, and impact assessment with target venue evidence.
+> 5. Produce a structured Idea Broker Report.
+
+### Phase 2-6: [Same dispatch pattern as gnn/SKILL.md for all shared agents]
+
+### Phase 7-9: [Same dispatch pattern as gnn/SKILL.md for all validation agents]
+
+## Knowledge Base Integration
+
+### Paper → Module → Idea Pipeline
+
+1. **Paper Reader agent** produces structured paper notes and stores the paper entry.
+2. **KB Manager** (via `/decompose`) decomposes the paper into constituent modules.
+3. **KB Manager** recomputes module composability.
+4. **KB Manager** (via `/combinations`) recomputes the idea hypergraph.
+5. **KB Manager** (via `/recommend-venue`) recommends target venues.
+
+### Pre-Dispatch Context Injection
+
+Before dispatching any research agent, load KB context (see gnn/SKILL.md for full protocol).
+
+### Difficulty-Adaptive Workflow
+
+| Tier | Experiment Engineer | Theory Crafter | Review Simulator |
+|------|-------------------|----------------|------------------|
+| CCF-A | 6-8 datasets, 10+ baselines | Theory required | CCF-A calibrated |
+| CCF-B | 4-5 datasets, 7+ baselines | Theory preferred | CCF-B calibrated |
+| CCF-C | 3-4 datasets, 5+ baselines | Theory optional | Streamlined |
+
+### Post-Dispatch Storage
+
+Auto-store delta after each agent if `/auto-store on` is active.
+
+### Cross-Session Continuity
+
+On new session: load active context via `/recall`.
+
+## Domain Knowledge
+
+Load from `{{SHORT_NAME}}/references/`:
+- `papers.md` — Paper database
+- `datasets.md` — Benchmark datasets
+- `ideas.md` — Research directions
+
+## Global Commands
+
+[Same as all domains — see gnn/SKILL.md for complete global command table]
+
+## Error Handling
+
+If an agent's output does not meet quality gates: request re-execution with refined input, or document the failure and route back to the appropriate earlier phase.
