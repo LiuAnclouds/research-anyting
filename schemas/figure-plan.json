@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "moon-research/figure-plan-v1",
+  "title": "Moon-Research figure plan (v1)",
+  "description": "Schema that figure-planner emits to manuscript/figures/PLAN.json. Drives the figure-pipeline (planner -> prompt-critic -> renderer -> vision-critic -> integrator).",
+  "type": "object",
+  "required": ["target_venue", "min_figures", "slots"],
+  "additionalProperties": false,
+  "properties": {
+    "target_venue": {"type": "string"},
+    "min_figures": {"type": "integer", "minimum": 4,
+      "description": "Minimum figure count for the target venue tier. CCF-B: >=6. CCF-A: >=8."},
+    "venue_tier": {"type": "string",
+      "enum": ["CCF-A", "CCF-B", "CCF-C", "Workshop", "Preprint"]},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "slots": {
+      "type": "array",
+      "minItems": 4,
+      "items": {"$ref": "#/$defs/slot"}
+    }
+  },
+  "$defs": {
+    "slot": {
+      "type": "object",
+      "required": ["slot_id", "kind", "caption_seed", "data_source", "section"],
+      "additionalProperties": false,
+      "properties": {
+        "slot_id": {"type": "string", "pattern": "^fig:[a-z0-9-]+$"},
+        "kind": {
+          "type": "string",
+          "enum": ["architecture", "main-results", "ablation",
+                   "sensitivity", "correlation", "per-layer-probe",
+                   "qualitative", "case-study", "convergence", "calibration",
+                   "data-distribution"]
+        },
+        "caption_seed": {"type": "string", "minLength": 20,
+          "description": "One-sentence seed for the figure caption; the integrator expands this."},
+        "data_source": {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {"type": "string", "enum": ["json", "csv", "log", "tikz", "synthetic"]},
+            "path": {"type": "string"},
+            "fields": {"type": "array", "items": {"type": "string"}}
+          }
+        },
+        "section": {"type": "string",
+          "description": "Filename of the .tex section the integrator should insert into, e.g. '03_method.tex'."},
+        "renderer": {
+          "type": "string",
+          "enum": ["matplotlib", "tikz", "plotly-static"],
+          "default": "matplotlib"
+        },
+        "axes_labels": {
+          "type": "object",
+          "properties": {"x": {"type": "string"}, "y": {"type": "string"}}
+        },
+        "palette": {"type": "string", "default": "viridis",
+          "description": "Colorblind-safe palette. The figure-vision-critic checks palette-accessible."},
+        "size_inches": {
+          "type": "array",
+          "items": {"type": "number"},
+          "minItems": 2, "maxItems": 2,
+          "default": [6.0, 4.0]
+        },
+        "seed": {"type": "integer", "default": 42,
+          "description": "Random seed for any sampling in the renderer."}
+      }
+    }
+  }
+}

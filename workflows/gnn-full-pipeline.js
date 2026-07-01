@@ -73,26 +73,26 @@ const expReport = await agent(
 
 phase('Validation')
 
-// Phase 7: Insight analysis
-const insightReport = await agent(
-  'Extract causal explanations for experimental outcomes. Use the ' +
-  'gnn-insight-analyzer agent definition. Every mechanism supported by evidence.',
-  { phase: 'Validation', agentType: 'gnn-insight-analyzer', schema: null }
-)
-
-// Phase 8: Deep verification (can run concurrently with insight analysis)
-const verifyReport = await agent(
-  'Independently verify every claim against raw data. Use the deep-verification ' +
-  'agent definition. Assume claims are false until sufficient evidence is presented.',
-  { phase: 'Validation', agentType: 'deep-verification', schema: null }
-)
-
-// Phase 9: Review simulation
-const reviewReport = await agent(
-  'Simulate multi-role peer review. Use the review-simulator agent definition. ' +
-  'EIC + Reviewer#1 (Method) + Reviewer#2 (Experiment) + Skeptic.',
-  { phase: 'Validation', agentType: 'review-simulator', schema: null }
-)
+// Insight, deep-verification, and review-simulator all consume the experiment
+// outputs from disk; none reads the others' content. Per
+// shared/references/parallelism-doctrine.md they MUST fan out.
+const [insightReport, verifyReport, reviewReport] = await parallel([
+  () => agent(
+    'Extract causal explanations for experimental outcomes. Use the ' +
+    'gnn-insight-analyzer agent definition. Every mechanism supported by evidence.',
+    { phase: 'Validation', agentType: 'gnn-insight-analyzer', schema: null }
+  ),
+  () => agent(
+    'Independently verify every claim against raw data. Use the deep-verification ' +
+    'agent definition. Assume claims are false until sufficient evidence is presented.',
+    { phase: 'Validation', agentType: 'deep-verification', schema: null }
+  ),
+  () => agent(
+    'Simulate multi-role peer review. Use the review-simulator agent definition. ' +
+    'EIC + Reviewer#1 (Method) + Reviewer#2 (Experiment) + Skeptic.',
+    { phase: 'Validation', agentType: 'review-simulator', schema: null }
+  ),
+])
 
 log('GNN Full Pipeline complete.')
 log(`Review score: ${reviewReport?.match(/Score: (\d+)/)?.[1] || 'N/A'}/100`)

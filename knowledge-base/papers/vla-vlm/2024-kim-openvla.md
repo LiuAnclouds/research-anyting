@@ -21,6 +21,8 @@ updated: 2026-06-25
 confidence: high
 source: seed-data
 session_ref: seed-data
+external_verified: null  # P3 backfill: pre-migration; run scripts/verify_citations.py + scripts/paper_fetcher.py to set true/false
+
 ---
 
 # OpenVLA: An Open-Source Vision-Language-Action Model

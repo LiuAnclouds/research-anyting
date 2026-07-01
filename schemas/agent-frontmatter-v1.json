@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "moon-research/agent-frontmatter-v1",
+  "title": "Moon-Research agent frontmatter (v1)",
+  "description": "Canonical YAML frontmatter every agent in agents/**/*.md must satisfy after the P1 migration. Validated by workflows/_dispatch.js on load.",
+  "type": "object",
+  "required": ["name", "description", "rigor_contract"],
+  "additionalProperties": false,
+  "properties": {
+    "name": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+    "description": {"type": "string", "minLength": 10},
+    "model": {
+      "type": "string",
+      "description": "Specific model id or 'inherit'. Default 'inherit' if omitted by migration.",
+      "default": "inherit"
+    },
+    "tools": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Host tools this agent may invoke. Required for any agent that grounds claims (must include WebFetch or paper_fetcher.py-via-Bash).",
+      "default": ["Read", "Grep", "Glob"]
+    },
+    "reads": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Glob list of paths this agent reads. Used by reviewers to validate evidence provenance."
+    },
+    "writes": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Glob list of paths this agent writes."
+    },
+    "memory": {
+      "type": "string",
+      "description": "Path to this agent's chronological memory file (P2 RAG memory)."
+    },
+    "rigor_contract": {
+      "type": "string",
+      "enum": ["three-times-verified"],
+      "description": "Doctrine the agent operates under. P0+ requires three-times-verified on every dispatched agent."
+    },
+    "panel": {
+      "type": "string",
+      "enum": ["EXPLORE", "DESIGN", "VALIDATE", "ANALYZE", "WRITE", "REVIEW", "executor", "support"],
+      "default": "executor",
+      "description": "Which panel this agent belongs to. 'executor' = pipeline executor; 'support' = utility (kb-manager etc.)."
+    },
+    "weight": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100,
+      "default": 0,
+      "description": "Panel weight; 0 for executors and support agents."
+    },
+    "critical_axes": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Axes on which this expert can unilaterally veto (score<60 -> veto regardless of weighted aggregate)."
+    },
+    "embedding_model": {
+      "type": "string",
+      "default": "sentence-transformers/all-MiniLM-L6-v2",
+      "description": "Model used to build this agent's private RAG index (P2)."
+    },
+    "parallelism_contract": {
+      "type": "string",
+      "enum": ["max-fanout", "serial-justified"],
+      "default": "max-fanout",
+      "description": "Default-parallel contract per shared/references/parallelism-doctrine.md. 'max-fanout' = the agent fans out all independent sub-work concurrently (default for all agents). 'serial-justified' = the agent intentionally serializes; requires a comment in its prose explaining why."
+    }
+  }
+}

@@ -150,3 +150,19 @@ The following commands are available at any time regardless of domain:
 ## Error Handling
 
 If a dispatched agent produces output that does not meet its quality requirements, the orchestrator must either request re-execution with refined input, or document the failure and its implications. If an agent encounters a fundamentally unresolved issue, the orchestrator may route back to an earlier phase or recommend terminating the direction.
+
+## P2 Supplement — audit-panel integration
+
+As of the P2 panel rollout, every phase of the VLA-VLM pipeline runs through the **same audit-panel infrastructure as the GNN domain** — `workflows/audit-loop.js` + the 6 phase panels (EXPLORE / DESIGN / VALIDATE / ANALYZE / WRITE / REVIEW), each gated at aggregate ≥90 with critical-axis veto and 10-round escalation.
+
+Domain-agnostic by design: the panel agents (`agents/explore/*.md`, `agents/design/*.md`, etc.) do not branch on domain — they audit the manuscript / experiments / KB content directly. VLA-VLM-specific behavior is achieved by:
+
+1. **Benchmark-registry filter**: When `r2-experiments` / `dataset-fitness` / `reproducibility` look up cited datasets, they filter `shared/references/benchmark-registry.yaml` for `domain: vla-vlm`. The 26-entry seed registry already covers RT-1, OpenX-Embodiment, LIBERO, CALVIN, VQAv2, GQA, MMLU, MMBench, MME, SEED-Bench.
+
+2. **VLA-G* / VLM-G* gate composition**: The domain-specific quality gates listed under "VLA/VLM-Specific Quality Gates" above run *in addition to* the general audit-panel gates. They appear as advisory findings in the relevant panel (sim-to-real gap → `r2-experiments`; embodiment diversity → `dataset-fitness`; hallucination decomposition → `failure-case`; prompt sensitivity → `metric-validity`).
+
+3. **Per-expert temperature rotation** (P2-G mode-collapse mitigation): `audit-loop.js` automatically routes anchor experts (statistics, format-expert, claim-trace-expert) to low temperature 0.2 and adversarial experts (devils-advocate, bias-auditor) to high temperature 0.9, regardless of domain.
+
+4. **CLI flags** (P2-F): `/mr vla-vlm <phase> --no-audit / --target X / --max-rounds N / --legacy` route through `workflows/_args.js` exactly like the GNN domain.
+
+No new agent files are required for VLA-VLM; the existing 25 audit-expert agent files (5 EXPLORE + 5 DESIGN + 5 VALIDATE + 5 ANALYZE + 5 WRITE + 5 REVIEW) cover both domains.

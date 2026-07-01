@@ -71,6 +71,7 @@ When invoked, `$ARGUMENTS` contains the subcommand and all its arguments. Parse 
 ├── config <key> <value>    → 配置系统参数
 │
 └── help                    → 显示命令参考
+```
 
 ## Project Management
 
@@ -95,8 +96,7 @@ Default paths:
 - Projects: `~/research/`
 - Shared KB: `~/research/.moon-kb/`
 
-Override via `/mr config projects.root /path/to/projects` and `/mr config kb.root /path/to/kb`.`
-```
+Override via `/mr config projects.root /path/to/projects` and `/mr config kb.root /path/to/kb`.
 
 ## Dispatch Protocol
 

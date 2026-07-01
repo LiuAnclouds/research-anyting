@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
+
+# Moon-Research run artifacts (regeneratable)
+knowledge-base/cache/
+knowledge-base/_state.json
+knowledge-base/audit-rounds/
+knowledge-base/experts/*/index.json
+
+# Regression test reports (produced by test runners)
+tests/regression/*_report.json
+tests/regression/*_backup.json
+
+# Editor
+.vscode/
+.idea/
+*.swp

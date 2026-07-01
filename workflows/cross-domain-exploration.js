@@ -10,18 +10,20 @@ export const meta = {
 
 phase('Module Discovery')
 
-// Query both domains' modules
-const gnnModules = await agent(
-  'List all validated and partially-validated GNN modules from the knowledge base. ' +
-  'For each module, report: name, category, assumptions, composable_with, and limitations.',
-  { phase: 'Module Discovery', schema: null }
-)
-
-const vlavlmModules = await agent(
-  'List all validated and partially-validated VLA-VLM modules from the knowledge base. ' +
-  'For each module, report: name, category, assumptions, composable_with, and limitations.',
-  { phase: 'Module Discovery', schema: null }
-)
+// Query both domains' modules in parallel — independent KB lookups
+// (per shared/references/parallelism-doctrine.md: no data dep, MUST fan out).
+const [gnnModules, vlavlmModules] = await parallel([
+  () => agent(
+    'List all validated and partially-validated GNN modules from the knowledge base. ' +
+    'For each module, report: name, category, assumptions, composable_with, and limitations.',
+    { phase: 'Module Discovery', schema: null }
+  ),
+  () => agent(
+    'List all validated and partially-validated VLA-VLM modules from the knowledge base. ' +
+    'For each module, report: name, category, assumptions, composable_with, and limitations.',
+    { phase: 'Module Discovery', schema: null }
+  ),
+])
 
 phase('Combination Assessment')
 

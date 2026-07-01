@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "moon-research/audit-v1",
+  "title": "Moon-Research panel-audit verdict (v1)",
+  "description": "Canonical JSON emitted by every audit panel run. One file per (phase, round). Stored at knowledge-base/audit-rounds/YYYY-MM-DD-<phase>-round<N>.json.",
+  "type": "object",
+  "required": ["panel", "round", "experts", "aggregate", "decision", "aggregate_formula"],
+  "additionalProperties": true,
+  "properties": {
+    "panel": {
+      "type": "string",
+      "enum": ["EXPLORE", "DESIGN", "VALIDATE", "ANALYZE", "WRITE", "REVIEW"]
+    },
+    "phase_target": {
+      "type": "string",
+      "description": "Workspace-relative path or KB wikilink the panel is auditing (e.g. manuscript/main.tex)."
+    },
+    "round": {"type": "integer", "minimum": 0, "description": "1..N for normal panel rounds; 0 reserved for synthetic pre-flight audits (e.g. lint_rigor scan) that write a round-0 verdict before round 1's executor fires."},
+    "timestamp": {"type": "string", "format": "date-time"},
+    "executor_agent": {"type": "string"},
+    "executor_output_hash": {"type": "string"},
+    "experts": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 5,
+      "description": "3-5 for normal panel rounds; 0 allowed for synthetic pre-flight audits that skip the panel entirely (e.g. round-0 lint_rigor verdict).",
+      "items": {"$ref": "#/$defs/expertVerdict"}
+    },
+    "aggregate": {"type": "number", "minimum": 0, "maximum": 100},
+    "aggregate_formula": {
+      "type": "string",
+      "enum": [
+        "sum(expert.score * expert.weight) / 100",
+        "pre-flight synthetic (lint_rigor)"
+      ],
+      "description": "Formula used to compute `aggregate`. Normal panel rounds use the weighted-sum formula; synthetic pre-flight audits declare their source instead."
+    },
+    "decision": {"type": "string", "enum": ["PASS", "REVISE"]},
+    "vetoes_global": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/veto"}
+    },
+    "blocking_findings": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/finding"}
+    },
+    "advisory_findings": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/finding"}
+    },
+    "diff_vs_previous_round": {
+      "type": ["object", "null"],
+      "properties": {
+        "axes_improved": {"type": "array", "items": {"type": "string"}},
+        "axes_regressed": {"type": "array", "items": {"type": "string"}},
+        "new_blocking": {"type": "array", "items": {"$ref": "#/$defs/finding"}},
+        "resolved_blocking": {"type": "array", "items": {"type": "string"}}
+      }
+    }
+  },
+  "$defs": {
+    "expertVerdict": {
+      "type": "object",
+      "required": ["name", "weight", "axes", "score"],
+      "additionalProperties": true,
+      "properties": {
+        "name": {"type": "string"},
+        "weight": {"type": "integer", "minimum": 0, "maximum": 100},
+        "axes": {
+          "type": "object",
+          "description": "Map of axis_name (string) -> score (0..100).",
+          "patternProperties": {
+            "^[a-z][a-z0-9_-]*$": {"type": "number", "minimum": 0, "maximum": 100}
+          },
+          "minProperties": 1
+        },
+        "axis_weights": {
+          "type": "object",
+          "description": "Optional per-axis weight; missing entries default to 1.",
+          "patternProperties": {
+            "^[a-z][a-z0-9_-]*$": {"type": "number", "minimum": 0}
+          }
+        },
+        "score": {"type": "number", "minimum": 0, "maximum": 100,
+                  "description": "MUST equal weighted_mean(axes) within +/- 0.5; runner recomputes and fails on mismatch."},
+        "vetoes": {"type": "array", "items": {"$ref": "#/$defs/veto"}},
+        "evidence": {
+          "type": "array",
+          "description": "Non-empty required for any axis with score >= 80.",
+          "items": {"$ref": "#/$defs/evidence"}
+        },
+        "blocking_findings": {"type": "array", "items": {"$ref": "#/$defs/finding"}},
+        "advisory_findings": {"type": "array", "items": {"$ref": "#/$defs/finding"}}
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "required": ["type", "uri"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {"type": "string", "enum": ["file", "kb", "url", "doi", "arxiv", "github", "dblp", "crossref", "semantic-scholar"]},
+        "uri": {"type": "string", "minLength": 1},
+        "retrieved_at": {"type": "string", "format": "date-time"},
+        "snippet": {"type": "string"}
+      }
+    },
+    "finding": {
+      "type": "object",
+      "required": ["axis", "msg"],
+      "additionalProperties": false,
+      "properties": {
+        "axis": {"type": "string"},
+        "severity": {"type": "string", "enum": ["blocking", "advisory"]},
+        "msg": {"type": "string"},
+        "fix_hint": {"type": "string"},
+        "evidence": {"type": "array", "items": {"$ref": "#/$defs/evidence"}}
+      }
+    },
+    "veto": {
+      "type": "object",
+      "required": ["axis", "expert", "reason"],
+      "additionalProperties": false,
+      "properties": {
+        "axis": {"type": "string"},
+        "expert": {"type": "string"},
+        "reason": {"type": "string"},
+        "score_at_veto": {"type": "number"},
+        "threshold": {"type": "number", "default": 60}
+      }
+    }
+  }
+}

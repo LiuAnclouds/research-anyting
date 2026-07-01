@@ -50,25 +50,28 @@ const expReport = await agent(
 
 phase('Validation')
 
-const insightReport = await agent(
-  'Extract causal explanations for experimental outcomes. Use the vlavlm-insight-analyzer ' +
-  'agent definition. VLA: success rate decomposition, failure mode taxonomy. ' +
-  'VLM: hallucination decomposition, capability profiling.',
-  { phase: 'Validation', agentType: 'vlavlm-insight-analyzer', schema: null }
-)
-
-const verifyReport = await agent(
-  'Independently verify every claim. Use the deep-verification agent definition. ' +
-  'VLA-specific: sim-to-real gap, embodiment overfitting. ' +
-  'VLM-specific: hallucination decomposition, prompt sensitivity.',
-  { phase: 'Validation', agentType: 'deep-verification', schema: null }
-)
-
-const reviewReport = await agent(
-  'Simulate multi-role peer review. Use the review-simulator agent definition. ' +
-  'Include VLA/VLM-specific checklist items.',
-  { phase: 'Validation', agentType: 'review-simulator', schema: null }
-)
+// Insight, deep-verification, and review-simulator all consume the experiment
+// outputs from disk; none reads the others' content. Per
+// shared/references/parallelism-doctrine.md they MUST fan out.
+const [insightReport, verifyReport, reviewReport] = await parallel([
+  () => agent(
+    'Extract causal explanations for experimental outcomes. Use the vlavlm-insight-analyzer ' +
+    'agent definition. VLA: success rate decomposition, failure mode taxonomy. ' +
+    'VLM: hallucination decomposition, capability profiling.',
+    { phase: 'Validation', agentType: 'vlavlm-insight-analyzer', schema: null }
+  ),
+  () => agent(
+    'Independently verify every claim. Use the deep-verification agent definition. ' +
+    'VLA-specific: sim-to-real gap, embodiment overfitting. ' +
+    'VLM-specific: hallucination decomposition, prompt sensitivity.',
+    { phase: 'Validation', agentType: 'deep-verification', schema: null }
+  ),
+  () => agent(
+    'Simulate multi-role peer review. Use the review-simulator agent definition. ' +
+    'Include VLA/VLM-specific checklist items.',
+    { phase: 'Validation', agentType: 'review-simulator', schema: null }
+  ),
+])
 
 log('VLA/VLM Full Pipeline complete.')
 return { ideaReport, surveyReport, theoryReport, protoReport, expReport, insightReport, verifyReport, reviewReport }

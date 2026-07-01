@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "moon-research/state-v1",
+  "title": "Moon-Research persistent pipeline state (v1)",
+  "description": "Single-file snapshot of the most recent audit-loop round, written to knowledge-base/_state.json after every round. Consumed by scripts/mr_resume.py to print a recovery plan and by /mr resume to decide whether to advance, revise, or escalate. Updated in-place — there is exactly one _state.json per project. For per-round history, see knowledge-base/audit-rounds/*.json.",
+  "type": "object",
+  "required": ["project_root", "current_phase", "runStartedAt"],
+  "additionalProperties": true,
+  "properties": {
+    "project_root": {
+      "type": "string",
+      "description": "Workspace root (or manuscript path) the pipeline is operating on."
+    },
+    "current_phase": {
+      "type": "string",
+      "enum": ["EXPLORE", "DESIGN", "VALIDATE", "ANALYZE", "WRITE", "REVIEW", "COMPLETE"],
+      "description": "Last phase the audit-loop wrote a verdict for. COMPLETE means the pipeline finished all gates."
+    },
+    "last_audit_round_path": {
+      "type": "string",
+      "description": "Workspace-relative path to the most recent per-round audit JSON (under knowledge-base/audit-rounds/)."
+    },
+    "last_audit_round": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Round index for last_audit_round_path. 0 means no rounds yet."
+    },
+    "last_aggregate": {
+      "type": "number",
+      "description": "Weighted aggregate score from the last round (0-100)."
+    },
+    "last_decision": {
+      "type": "string",
+      "enum": ["PASS", "REVISE", "VETO", "ESCALATED"],
+      "description": "Decision from the last round. VETO is reserved for critical-axis-only failures; the audit-loop normally emits PASS/REVISE/ESCALATED."
+    },
+    "blocking_findings_unresolved": {
+      "type": "array",
+      "description": "Blocking findings carried over from the last round (mirrors audit.blocking_findings)."
+    },
+    "vetoes_unresolved": {
+      "type": "array",
+      "description": "Active critical-axis vetoes from the last round (mirrors audit.vetoes_global)."
+    },
+    "runStartedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO timestamp when the pipeline run was launched. Injected by the workflow caller; workflow scripts can't call new Date() on this harness."
+    },
+    "lastUpdatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO timestamp of this state-file write. Workflow scripts mirror runStartedAt here; resume scripts may overwrite with the real wall clock."
+    },
+    "estimated_cost_usd_to_date": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Running total of audit.meta.estimated_cost_usd across rounds. Workflow caller maintains this; audit-loop.js writes 0 and lets the caller patch it before the next round."
+    }
+  }
+}

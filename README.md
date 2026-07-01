@@ -48,11 +48,11 @@ Experiment Debugger   Figures + BibTeX       + Devil's Advocate
 
 ```bash
 # Clone the repository
-git clone https://github.com/LiuAnclouds/research-anyting.git ~/.claude/plugins/research-anyting
+git clone https://github.com/LiuAnclouds/research-anything.git ~/.claude/plugins/research-anything
 
 # Register the skill (required for command discovery)
 mkdir -p ~/.claude/skills/mr
-cp ~/.claude/plugins/research-anyting/skills/mr/SKILL.md ~/.claude/skills/mr/SKILL.md
+cp ~/.claude/plugins/research-anything/skills/mr/SKILL.md ~/.claude/skills/mr/SKILL.md
 ```
 
 Then restart Claude Code or run `/reload-plugins`. Verify with `/mr help`.
@@ -62,23 +62,23 @@ Then restart Claude Code or run `/reload-plugins`. Verify with `/mr help`.
 ### Codex CLI
 
 ```bash
-git clone https://github.com/LiuAnclouds/research-anyting.git ~/.codex/plugins/research-anyting
+git clone https://github.com/LiuAnclouds/research-anything.git ~/.codex/plugins/research-anything
 mkdir -p ~/.codex/skills/mr
-cp ~/.codex/plugins/research-anyting/skills/mr/SKILL.md ~/.codex/skills/mr/SKILL.md
+cp ~/.codex/plugins/research-anything/skills/mr/SKILL.md ~/.codex/skills/mr/SKILL.md
 ```
 ```
 
 ### Cursor / Windsurf
 
 ```bash
-git clone https://github.com/LiuAnclouds/research-anyting.git ~/research-anyting
+git clone https://github.com/LiuAnclouds/research-anything.git ~/research-anything
 ```
 
 In Cursor, add the `agents/` directory as custom instructions or reference specific agent definitions in your prompt. The agent definitions in `agents/*.md` are self-contained specifications that any LLM coding agent can follow.
 
 Usage pattern:
 ```
-You are acting as the GNN Idea Broker from research-anyting.
+You are acting as the GNN Idea Broker from research-anything.
 [Paste agents/gnn-idea-broker.md content]
 Topic: dynamic graph anomaly detection
 ```
@@ -88,7 +88,7 @@ Topic: dynamic graph anomaly detection
 Add agent definitions to Copilot's custom instructions:
 ```bash
 mkdir -p .github/copilot-instructions/
-cp ~/.claude/plugins/research-anyting/agents/gnn-idea-broker.md .github/copilot-instructions/
+cp ~/.claude/plugins/research-anything/agents/gnn-idea-broker.md .github/copilot-instructions/
 ```
 
 ### Manual (Any Agent)
@@ -96,7 +96,7 @@ cp ~/.claude/plugins/research-anyting/agents/gnn-idea-broker.md .github/copilot-
 All agent definitions are standalone Markdown files in `agents/`. Copy the relevant agent definition into any LLM agent's context:
 
 ```bash
-cat ~/.claude/plugins/research-anyting/agents/literature-survey.md
+cat ~/.claude/plugins/research-anything/agents/literature-survey.md
 # Paste into your agent's prompt with the topic appended
 ```
 
@@ -214,7 +214,7 @@ Runs all 10 steps autonomously. Add `--human-gates` to require approval at key d
 ## Architecture
 
 ```
-research-anyting/
+research-anything/
 ├── .claude-plugin/plugin.json       # Plugin manifest
 ├── mr/SKILL.md                      # Top-level entry point (/mr)
 ├── agents/                          # 27 agent definitions

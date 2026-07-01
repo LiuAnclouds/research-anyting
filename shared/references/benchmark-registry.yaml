@@ -1,0 +1,340 @@
+# Moon-Research benchmark registry (P1 seed)
+#
+# Canonical reference of benchmarks researchers cite. The hallucination-expert
+# uses this to confirm dataset names appearing in manuscripts resolve to a
+# real artifact; verify_baselines.py consults this when a baseline paper
+# claims to evaluate on dataset X.
+#
+# Schema (per entry):
+#   name:           Canonical name. Aliases live under `aliases:`.
+#   source:         Hosting authority (snap | pyg | ogb | huggingface | papers-with-code | custom).
+#   url:            Authoritative download or landing URL.
+#   modality:       graph-dynamic | graph-static | text | image | multimodal | rl-trajectory
+#   n_nodes:        Node count if applicable.
+#   n_edges:        Edge count if applicable.
+#   n_samples:      Sample count for non-graph datasets.
+#   anomaly_rate:   Fraction of anomalous edges/nodes/samples (DGAD-relevant).
+#   heterophily_h:  Edge heterophily ratio (graph-only; see Pei et al. 2020).
+#   license:        Use license.
+#   primary_paper:  Bib key of the dataset paper.
+#   aliases:        Alternative names seen in the literature.
+#   domain:         gnn | vla-vlm | nlp | rl | cross-domain
+#
+# Three-Times Rule: every numeric field below was checked against the
+# primary paper or the source page on the date listed in `verified_at`.
+# If you add an entry, populate `verified_at` after verifying.
+
+datasets:
+
+  # =========================================================================
+  # Dynamic graph anomaly detection (DGAD) — used in GNN-dynamic manuscript
+  # =========================================================================
+
+  - name: Bitcoin-Alpha
+    source: snap
+    url: https://snap.stanford.edu/data/soc-sign-bitcoin-alpha.html
+    modality: graph-dynamic
+    n_nodes: 3783
+    n_edges: 24186
+    heterophily_h: 0.004
+    license: SNAP-noncommercial
+    primary_paper: kumar2016edge
+    aliases: [bitcoin_alpha, soc-sign-bitcoin-alpha]
+    domain: gnn
+    verified_at: 2026-06-30
+
+  - name: Bitcoin-OTC
+    source: snap
+    url: https://snap.stanford.edu/data/soc-sign-bitcoin-otc.html
+    modality: graph-dynamic
+    n_nodes: 5881
+    n_edges: 35592
+    heterophily_h: 0.008
+    license: SNAP-noncommercial
+    primary_paper: kumar2016edge
+    aliases: [bitcoin_otc, soc-sign-bitcoin-otc]
+    domain: gnn
+    verified_at: 2026-06-30
+
+  - name: UCI Messages
+    source: snap
+    url: https://snap.stanford.edu/data/CollegeMsg.html
+    modality: graph-dynamic
+    n_nodes: 1899
+    n_edges: 59835
+    heterophily_h: 0.918
+    license: SNAP-noncommercial
+    primary_paper: panzarasa2009patterns
+    aliases: [CollegeMsg, college-msg, uci-messages, uci_messages, UCI_Forum]
+    domain: gnn
+    verified_at: 2026-06-30
+
+  - name: Reddit-Body
+    source: snap
+    url: https://snap.stanford.edu/data/soc-RedditHyperlinks.html
+    modality: graph-dynamic
+    n_nodes: 35776
+    n_edges: 286561
+    license: SNAP-noncommercial
+    primary_paper: kumar2018community
+    domain: gnn
+    verified_at: 2026-06-30
+
+  - name: Wiki-RfA
+    source: snap
+    url: https://snap.stanford.edu/data/wiki-RfA.html
+    modality: graph-dynamic
+    n_nodes: 11381
+    n_edges: 189004
+    license: SNAP-noncommercial
+    primary_paper: west2014exploiting
+    aliases: [wikirfa, wiki-rfa]
+    domain: gnn
+    verified_at: 2026-06-30
+
+  - name: Email-Eu-core
+    source: snap
+    url: https://snap.stanford.edu/data/email-Eu-core-temporal.html
+    modality: graph-dynamic
+    n_nodes: 986
+    n_edges: 332334
+    license: SNAP-noncommercial
+    primary_paper: paranjape2017motifs
+    aliases: [email-eu, email_eu_core, email-eu-core-temporal]
+    domain: gnn
+    verified_at: 2026-06-30
+
+  - name: Elliptic
+    source: kaggle
+    url: https://www.kaggle.com/datasets/ellipticco/elliptic-data-set
+    modality: graph-dynamic
+    n_nodes: 203769
+    n_edges: 234355
+    anomaly_rate: 0.02
+    license: Custom (research use)
+    primary_paper: weber2019anti
+    aliases: [elliptic-bitcoin, EllipticBitcoin]
+    domain: gnn
+    verified_at: 2026-06-30
+
+  # =========================================================================
+  # Static graph node classification — heterophily benchmarks
+  # =========================================================================
+
+  - name: Cora
+    source: pyg
+    url: https://github.com/kimiyoung/planetoid
+    modality: graph-static
+    n_nodes: 2708
+    n_edges: 10556
+    heterophily_h: 0.19
+    license: Public
+    primary_paper: yang2016revisiting
+    domain: gnn
+    verified_at: 2026-06-30
+
+  - name: Citeseer
+    source: pyg
+    url: https://github.com/kimiyoung/planetoid
+    modality: graph-static
+    n_nodes: 3327
+    n_edges: 9104
+    heterophily_h: 0.26
+    license: Public
+    primary_paper: yang2016revisiting
+    domain: gnn
+    verified_at: 2026-06-30
+
+  - name: PubMed
+    source: pyg
+    url: https://github.com/kimiyoung/planetoid
+    modality: graph-static
+    n_nodes: 19717
+    n_edges: 88648
+    heterophily_h: 0.20
+    license: Public
+    primary_paper: yang2016revisiting
+    domain: gnn
+    verified_at: 2026-06-30
+
+  - name: Squirrel
+    source: pyg
+    url: https://github.com/graphdml-uiuc-jlu/geom-gcn
+    modality: graph-static
+    n_nodes: 5201
+    n_edges: 217073
+    heterophily_h: 0.78
+    license: Public
+    primary_paper: pei2020geomgcn
+    domain: gnn
+    verified_at: 2026-06-30
+
+  - name: Chameleon
+    source: pyg
+    url: https://github.com/graphdml-uiuc-jlu/geom-gcn
+    modality: graph-static
+    n_nodes: 2277
+    n_edges: 36101
+    heterophily_h: 0.77
+    license: Public
+    primary_paper: pei2020geomgcn
+    domain: gnn
+    verified_at: 2026-06-30
+
+  - name: Actor
+    source: pyg
+    url: https://github.com/graphdml-uiuc-jlu/geom-gcn
+    modality: graph-static
+    n_nodes: 7600
+    n_edges: 33544
+    heterophily_h: 0.78
+    license: Public
+    primary_paper: pei2020geomgcn
+    aliases: [film, actor-cooccurrence]
+    domain: gnn
+    verified_at: 2026-06-30
+
+  # =========================================================================
+  # OGB
+  # =========================================================================
+
+  - name: ogbn-arxiv
+    source: ogb
+    url: https://ogb.stanford.edu/docs/nodeprop/#ogbn-arxiv
+    modality: graph-static
+    n_nodes: 169343
+    n_edges: 1166243
+    license: ODC-BY
+    primary_paper: hu2020ogb
+    domain: gnn
+    verified_at: 2026-06-30
+
+  - name: ogbn-products
+    source: ogb
+    url: https://ogb.stanford.edu/docs/nodeprop/#ogbn-products
+    modality: graph-static
+    n_nodes: 2449029
+    n_edges: 61859140
+    license: Amazon
+    primary_paper: hu2020ogb
+    domain: gnn
+    verified_at: 2026-06-30
+
+  - name: ogbl-collab
+    source: ogb
+    url: https://ogb.stanford.edu/docs/linkprop/#ogbl-collab
+    modality: graph-static
+    n_nodes: 235868
+    n_edges: 1285465
+    license: ODC-BY
+    primary_paper: hu2020ogb
+    domain: gnn
+    verified_at: 2026-06-30
+
+  # =========================================================================
+  # VLA / VLM benchmarks
+  # =========================================================================
+
+  - name: RT-1
+    source: huggingface
+    url: https://huggingface.co/datasets/google-research/rt1-data
+    modality: rl-trajectory
+    n_samples: 130000
+    license: Apache-2.0
+    primary_paper: brohan2022rt1
+    aliases: [rt1, rt-1, robotics-transformer-1]
+    domain: vla-vlm
+    verified_at: 2026-06-30
+
+  - name: OpenX-Embodiment
+    source: huggingface
+    url: https://github.com/google-deepmind/open_x_embodiment
+    modality: rl-trajectory
+    n_samples: 1000000
+    license: Apache-2.0
+    primary_paper: oxe2024openx
+    aliases: [openx, open-x-embodiment, OXE]
+    domain: vla-vlm
+    verified_at: 2026-06-30
+
+  - name: LIBERO
+    source: github
+    url: https://github.com/Lifelong-Robot-Learning/LIBERO
+    modality: rl-trajectory
+    n_samples: 6500
+    license: MIT
+    primary_paper: liu2023libero
+    domain: vla-vlm
+    verified_at: 2026-06-30
+
+  - name: CALVIN
+    source: github
+    url: https://github.com/mees/calvin
+    modality: rl-trajectory
+    n_samples: 24000
+    license: MIT
+    primary_paper: mees2022calvin
+    domain: vla-vlm
+    verified_at: 2026-06-30
+
+  - name: VQAv2
+    source: huggingface
+    url: https://visualqa.org/
+    modality: multimodal
+    n_samples: 1100000
+    license: CC-BY-4.0
+    primary_paper: goyal2017vqa
+    aliases: [vqa-v2, vqa2]
+    domain: vla-vlm
+    verified_at: 2026-06-30
+
+  - name: GQA
+    source: huggingface
+    url: https://cs.stanford.edu/people/dorarad/gqa/
+    modality: multimodal
+    n_samples: 22000000
+    license: CC-BY-4.0
+    primary_paper: hudson2019gqa
+    domain: vla-vlm
+    verified_at: 2026-06-30
+
+  - name: MMLU
+    source: huggingface
+    url: https://github.com/hendrycks/test
+    modality: text
+    n_samples: 15908
+    license: MIT
+    primary_paper: hendrycks2021mmlu
+    domain: nlp
+    verified_at: 2026-06-30
+
+  - name: MMBench
+    source: huggingface
+    url: https://github.com/open-compass/MMBench
+    modality: multimodal
+    n_samples: 3217
+    license: Apache-2.0
+    primary_paper: liu2024mmbench
+    domain: vla-vlm
+    verified_at: 2026-06-30
+
+  - name: MME
+    source: huggingface
+    url: https://github.com/BradyFU/Awesome-Multimodal-Large-Language-Models/tree/Evaluation
+    modality: multimodal
+    n_samples: 2374
+    license: Apache-2.0
+    primary_paper: fu2023mme
+    domain: vla-vlm
+    verified_at: 2026-06-30
+
+  - name: SEED-Bench
+    source: huggingface
+    url: https://github.com/AILab-CVC/SEED-Bench
+    modality: multimodal
+    n_samples: 19000
+    license: Apache-2.0
+    primary_paper: li2023seedbench
+    aliases: [seedbench]
+    domain: vla-vlm
+    verified_at: 2026-06-30

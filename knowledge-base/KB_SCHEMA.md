@@ -204,3 +204,95 @@ Cross-domain combinations are evaluated when `/mr combinations` is run and modul
 ## Retrieval Protocol
 
 Same as previously specified: filter by frontmatter → rank by relevance (recency + connection density) → top-K → condensed summary for agent context injection.
+
+## P1 Extension — Audit entity + external-verification fields
+
+The panel-audit system (P0/P1 upgrade — see `schemas/audit-v1.json`,
+`workflows/audit-loop.js`) introduces one new entity and three new
+frontmatter fields on Paper/Module/Idea.
+
+### Audit Entry
+
+Every audit-loop round emits an Audit record at
+`knowledge-base/audit-rounds/YYYY-MM-DD-<phase>-round<N>.json` and an
+indexed wikilink in `knowledge-base/audit-rounds/INDEX.md`. The
+human-readable Markdown shape (when an expert chooses to materialize
+its verdict into the graph for cross-link queries):
+
+```yaml
+type: audit
+audit_id: "2026-06-30-WRITE-round2-figure-expert"
+phase: EXPLORE | DESIGN | VALIDATE | ANALYZE | WRITE | REVIEW
+target: "manuscript/main.tex" | "[[idea-slug]]" | "[[module-slug]]"
+round: 1 | 2 | ...
+expert: figure-expert | claim-trace-expert | hallucination-expert | ...
+verdict: PASS | REVISE | VETO
+score: 0-100                              # weighted_mean of axes
+weight: 25                                 # this expert's panel weight
+axes: {axis_name: score, ...}              # raw axis scores
+critical_axes: [axis_name, ...]            # axes on which this expert can veto
+vetoes: [axis_name, ...]                   # axes that triggered a critical veto this round
+blocking_findings:                          # findings that block PASS
+  - {axis: ..., severity: blocking, msg: ..., fix_hint: ..., loci: [file:line, ...]}
+advisory_findings: [...]                    # findings reported but non-blocking
+evidence:                                   # grounding for every axis>=80
+  - {type: file | kb | url | recompute, uri: ..., retrieved_at: ISO8601}
+diff_vs_previous_round:
+  axes_improved: [...]
+  axes_regressed: [...]
+  new_blocking: [...]
+  resolved_blocking: [...]
+links_to: [[paper-slug]], [[module-slug]], [[idea-slug]]
+created: YYYY-MM-DD
+source: workflows/audit-loop.js
+```
+
+### Frontmatter additions on Paper / Module / Idea
+
+After the panel-audit migration date, **new** Paper entries are rejected
+by `kb-manager` unless the external-verification fields are populated.
+
+```yaml
+# Add to existing Paper entries:
+external_verified: true | false | null
+  # true:  paper_fetcher.py returned >=1 source hit with Jaccard >=0.6
+  # false: looked up but no source matched
+  # null:  not yet checked (only valid for pre-migration entries)
+verifier_used: "scripts/paper_fetcher.py" | "scripts/verify_citations.py"
+verified_at: YYYY-MM-DDTHH:MM:SSZ
+verification_evidence:
+  - {source: dblp | semantic_scholar | arxiv | crossref,
+     uri: "DOI or arXiv id or URL",
+     similarity: 0.0-1.0,
+     retrieved_at: ISO8601}
+```
+
+The same three fields propagate to Module entries (when the source paper
+gets verified the module inherits the verification) and to Idea entries
+(when each derived-from paper is verified).
+
+### Retrieval extensions
+
+The `kb-manager` retrieval protocol gains an additional filter:
+
+```
+audit_status:
+  PASSED   -> entity has >=1 Audit record with verdict=PASS and score>=90
+             on the most recent round
+  REVISING -> latest Audit is verdict=REVISE
+  ESCALATED -> latest Audit verdict=REVISE on round 10 (10-round cap)
+  UNAUDITED -> no Audit record (pre-migration or never run)
+```
+
+Default queries from any expert filter out `UNAUDITED` entities except
+when the query is itself an audit (in which case it operates on the
+unaudited entity to produce the first Audit record).
+
+### Backward compatibility
+
+Pre-migration entries are tagged `external_verified: null` at migration
+time. A periodic batch job (`/mr verify` — runs `verify_citations.py` and
+populates `verification_evidence`) walks `knowledge-base/papers/**` and
+upgrades `null` to true/false. `kb-manager` continues to surface
+`UNAUDITED` entries in retrieval but flags them with a yellow caveat in
+the rendered context block.

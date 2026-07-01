@@ -1,12 +1,12 @@
 {
-  "name": "research-anyting",
+  "name": "research-anything",
   "description": "Multi-agent autonomous research framework for Claude Code. Covers the full research lifecycle: literature survey, idea generation, theory design, experiment execution with real-time monitoring, insight analysis, paper writing, and peer review simulation. Supports arbitrary research domains with built-in GNN and VLA-VLM domains.",
   "version": "1.0.0",
   "author": {
     "name": "Moon Research"
   },
-  "homepage": "https://github.com/LiuAnclouds/research-anyting",
-  "repository": "https://github.com/LiuAnclouds/research-anyting",
+  "homepage": "https://github.com/LiuAnclouds/research-anything",
+  "repository": "https://github.com/LiuAnclouds/research-anything",
   "license": "MIT",
   "keywords": [
     "research",

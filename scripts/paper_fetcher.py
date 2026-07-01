@@ -3,9 +3,20 @@
 Paper Fetcher — Multi-source academic paper search and retrieval.
 Supports: Semantic Scholar, arXiv, DBLP, CrossRef, and OpenReview APIs.
 Usage: python paper_fetcher.py --query "topic" --sources all --max 100 --output results.json
+
+Features:
+  * Semantic Scholar API key via SEMANTIC_SCHOLAR_API_KEY env or --ss-key.
+  * HTTP 429 retry with exponential backoff (2^attempt + jitter, max 4 attempts).
+  * Concurrent CrossRef + DBLP + arXiv queries (Semantic Scholar stays sequential).
 """
-import argparse, json, sys, time, urllib.request, urllib.parse, urllib.error, ssl, os
+import argparse, json, sys, time, urllib.request, urllib.parse, urllib.error, ssl, os, random
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
+
+# ---------------------------------------------------------------------------
+# Globals configured by main(): SS API key shared across calls.
+# ---------------------------------------------------------------------------
+_SS_API_KEY = None
 
 # SSL context: use system certificates by default, allow override for restricted environments
 def _create_ssl_context():
@@ -20,6 +31,36 @@ def _create_ssl_context():
 
 ssl_ctx = _create_ssl_context()
 
+
+# ---------------------------------------------------------------------------
+# HTTP helper with 429 exponential-backoff retry
+# ---------------------------------------------------------------------------
+MAX_RETRIES = 4   # total attempts on HTTP 429
+
+def _urlopen_with_retry(req, source_label, timeout=30):
+    """
+    urlopen wrapper that retries on HTTP 429 with exponential backoff.
+    sleep = 2^attempt + jitter seconds, up to MAX_RETRIES total attempts.
+    Each retry logged to stderr. Non-429 HTTPErrors and other errors propagate.
+    Returns the response object (caller is responsible for closing).
+    """
+    for attempt in range(MAX_RETRIES):
+        try:
+            return urllib.request.urlopen(req, timeout=timeout, context=ssl_ctx)
+        except urllib.error.HTTPError as e:
+            if e.code != 429 or attempt == MAX_RETRIES - 1:
+                raise
+            sleep_s = (2 ** attempt) + random.uniform(0, 1)
+            print(
+                f"  [{source_label}] HTTP 429 (attempt {attempt + 1}/{MAX_RETRIES}); "
+                f"sleeping {sleep_s:.2f}s before retry",
+                file=sys.stderr,
+            )
+            time.sleep(sleep_s)
+    # unreachable
+    raise RuntimeError(f"{source_label}: retry loop exhausted without return")
+
+
 def fetch_semantic_scholar(query, max_results=100, year_start=None, year_end=None):
     """Search Semantic Scholar API."""
     base = "https://api.semanticscholar.org/graph/v1/paper/search"
@@ -31,9 +72,12 @@ def fetch_semantic_scholar(query, max_results=100, year_start=None, year_end=Non
     if year_start:
         params["year"] = f"{year_start}-{year_end or datetime.now().year}"
     url = f"{base}?{urllib.parse.urlencode(params)}"
+    headers = {"User-Agent": "Moon-Research/1.0"}
+    if _SS_API_KEY:
+        headers["x-api-key"] = _SS_API_KEY
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "Moon-Research/1.0"})
-        with urllib.request.urlopen(req, timeout=30, context=ssl_ctx) as resp:
+        req = urllib.request.Request(url, headers=headers)
+        with _urlopen_with_retry(req, "Semantic Scholar") as resp:
             data = json.loads(resp.read().decode())
         papers = []
         for p in data.get("data", []):
@@ -67,7 +111,7 @@ def fetch_arxiv(query, max_results=50):
     url = f"{base}?{urllib.parse.urlencode(params)}"
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "Moon-Research/1.0"})
-        with urllib.request.urlopen(req, timeout=30, context=ssl_ctx) as resp:
+        with _urlopen_with_retry(req, "arXiv") as resp:
             data = resp.read().decode()
         import xml.etree.ElementTree as ET
         ns = {"atom": "http://www.w3.org/2005/Atom", "arxiv": "http://arxiv.org/schemas/atom"}
@@ -97,7 +141,7 @@ def fetch_dblp(query, max_results=50):
     url = f"{base}?{urllib.parse.urlencode(params)}"
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "Moon-Research/1.0"})
-        with urllib.request.urlopen(req, timeout=30, context=ssl_ctx) as resp:
+        with _urlopen_with_retry(req, "DBLP") as resp:
             data = json.loads(resp.read().decode())
         papers = []
         for hit in data.get("result", {}).get("hits", {}).get("hit", []):
@@ -124,7 +168,7 @@ def fetch_crossref(query, max_results=50):
     url = f"{base}?{urllib.parse.urlencode(params)}"
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "Moon-Research/1.0 (mailto:research@example.com)"})
-        with urllib.request.urlopen(req, timeout=30, context=ssl_ctx) as resp:
+        with _urlopen_with_retry(req, "CrossRef") as resp:
             data = json.loads(resp.read().decode())
         papers = []
         for item in data.get("message", {}).get("items", []):
@@ -213,6 +257,15 @@ def rank_papers(papers, prefer_ccf_a=True, prefer_code=True, prefer_recent=True)
     return sorted(papers, key=score, reverse=True)
 
 def main():
+    global _SS_API_KEY
+
+    # Windows console: query strings and printed titles may include CJK / other
+    # non-ASCII text. Force UTF-8 stdout so we don't blow up on cp1252/cp936.
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
     p = argparse.ArgumentParser(description="Multi-Source Academic Paper Fetcher")
     p.add_argument("--query", required=True, help="Search query")
     p.add_argument("--sources", default="all", help="Comma-separated: semantic_scholar,arxiv,dblp,crossref,all")
@@ -222,9 +275,16 @@ def main():
     p.add_argument("--output", default="papers.json", help="Output JSON file")
     p.add_argument("--classify", action="store_true", help="Classify papers by CCF tier")
     p.add_argument("--ccf-only", type=str, help="Filter by CCF tier: A,B,C (comma-separated)")
+    p.add_argument("--ss-key", type=str, default=None,
+                   help="Semantic Scholar API key (overrides SEMANTIC_SCHOLAR_API_KEY env)")
     args = p.parse_args()
 
-    sources = args.sources.split(",")
+    # Resolve Semantic Scholar API key: CLI flag wins, else env var.
+    _SS_API_KEY = args.ss_key or os.environ.get("SEMANTIC_SCHOLAR_API_KEY") or None
+    if _SS_API_KEY:
+        print("  [Semantic Scholar] API key loaded (x-api-key header enabled)", file=sys.stderr)
+
+    sources = [s.strip() for s in args.sources.split(",") if s.strip()]
     if "all" in sources:
         sources = ["semantic_scholar", "arxiv", "dblp", "crossref"]
 
@@ -234,23 +294,42 @@ def main():
     print(f"Sources: {', '.join(sources)}")
     print("-" * 60)
 
-    for source in sources:
-        source = source.strip()
-        print(f"\n[{source}] Searching...")
-        if source == "semantic_scholar":
-            papers = fetch_semantic_scholar(args.query, args.max, args.year_start, args.year_end)
-        elif source == "arxiv":
-            papers = fetch_arxiv(args.query, min(args.max, 50))
-        elif source == "dblp":
-            papers = fetch_dblp(args.query, min(args.max, 50))
-        elif source == "crossref":
-            papers = fetch_crossref(args.query, min(args.max, 50))
-        else:
-            print(f"  Unknown source: {source}")
-            continue
+    # ----- Semantic Scholar: sequential (rate-limited, slowest) -----
+    if "semantic_scholar" in sources:
+        print(f"\n[semantic_scholar] Searching...")
+        ss_papers = fetch_semantic_scholar(args.query, args.max, args.year_start, args.year_end)
+        print(f"  Found: {len(ss_papers)} papers")
+        all_papers.extend(ss_papers)
 
-        print(f"  Found: {len(papers)} papers")
-        all_papers.extend(papers)
+    # ----- arXiv, DBLP, CrossRef: concurrent via ThreadPoolExecutor -----
+    parallel_jobs = []
+    if "arxiv" in sources:
+        parallel_jobs.append(("arxiv", lambda: fetch_arxiv(args.query, min(args.max, 50))))
+    if "dblp" in sources:
+        parallel_jobs.append(("dblp", lambda: fetch_dblp(args.query, min(args.max, 50))))
+    if "crossref" in sources:
+        parallel_jobs.append(("crossref", lambda: fetch_crossref(args.query, min(args.max, 50))))
+
+    # Surface unknown source names the way the old loop did, so callers
+    # passing typos still see them.
+    for s in sources:
+        if s not in ("semantic_scholar", "arxiv", "dblp", "crossref"):
+            print(f"  Unknown source: {s}")
+
+    if parallel_jobs:
+        print(f"\n[parallel] Dispatching {len(parallel_jobs)} sources concurrently: "
+              f"{', '.join(name for name, _ in parallel_jobs)}")
+        with ThreadPoolExecutor(max_workers=4) as ex:
+            futures = {ex.submit(fn): name for name, fn in parallel_jobs}
+            for fut in futures:
+                name = futures[fut]
+                try:
+                    papers = fut.result()
+                except Exception as e:
+                    print(f"  [{name}] Unhandled error: {e}", file=sys.stderr)
+                    papers = []
+                print(f"  [{name}] Found: {len(papers)} papers")
+                all_papers.extend(papers)
 
     # Deduplicate
     all_papers = deduplicate(all_papers)
@@ -290,11 +369,13 @@ def main():
         for t, cnt in sorted(tiers_count.items()):
             print(f"  {t}: {cnt}")
 
-    # Save
+    # Save — schema preserved: {query, papers, sources_queried} plus the
+    # legacy `sources` / `date` / `total` keys callers may already expect.
     output = {
         "query": args.query,
         "date": datetime.now().isoformat(),
         "sources": sources,
+        "sources_queried": sources,
         "total": len(all_papers),
         "papers": all_papers
     }
