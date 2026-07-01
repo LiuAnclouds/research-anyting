@@ -41,6 +41,10 @@ The decision rule: if call B's prompt does NOT depend on call A's *output conten
 | `secondary-metric-reported` | no | At least one secondary metric is reported alongside the primary (different perspective). |
 | `metric-significance` | no | Pairwise comparisons between proposed and best baseline are accompanied by a stat test or ≥3× std gap. |
 
+## Workflow
+
+Also read `<domain>/references/quality-gates.md` if it exists and score any gate axes declared there as additional advisory findings.
+
 ## Output
 
 JSON only.

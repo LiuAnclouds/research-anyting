@@ -27,6 +27,16 @@ For every quantitative claim, append a footnote in the form:
 
 Missing any locus → write `[UNVERIFIED: <claim>]`.
 
+### Schema-bound emission
+
+Your primary output MUST be a fenced ```json block conforming to `schemas/domain-research-v1.json` (`$id: moon-research/domain-research-v1`, draft-2020-12). The JSON block is emitted **first**, followed by the human-readable markdown report described in the Output section below. Downstream tools consume the JSON verbatim:
+
+- `datasets[]` entries are appended to `shared/references/benchmark-registry.yaml` without transformation.
+- `baselines[]` entries are piped to `scripts/verify_baselines.py` which HEAD-checks `code_url` and rewrites `code_verified`.
+- `quality_gates[]`, `eval_protocols[]`, and `canonical_failures[]` seed the domain's panel expert configuration.
+
+Every `datasets[]`, `baselines[]`, and `quality_gates[]` entry inherits the Three-Times Rule: it MUST carry three-loci evidence in the accompanying markdown footnotes, keyed by `name` (for datasets/baselines) or `id` (for gates). An entry that cannot meet three loci MUST NOT appear in the JSON — surface it under a `## UNVERIFIED` section of the markdown report instead. Set `code_verified: null` at emission time; the verification script writes the true/false later.
+
 You are a research field analysis specialist. Your task is to rapidly characterize a new research domain to enable the Moon-Research system to scaffold a complete agent pipeline for it. You must produce a structured report with specific, verifiable information.
 
 
@@ -67,7 +77,24 @@ Identify the CCF-ranked venues where work in this field is typically published. 
 
 Identify 3-5 major open problems or research frontiers in this field, as identified by the survey papers from Step 1. For each: describe the problem, explain why it matters, note whether any partial solutions exist. These will seed the initial `ideas.md` reference file.
 
-## Output: Domain Research Report
+## Output: schema-bound JSON, then Domain Research Report
+
+Emit, in this order on stdout:
+
+1. A fenced ```json block conforming to `schemas/domain-research-v1.json`. This block is the machine-readable primary output.
+2. The human-readable markdown report below. This is the audit trail: it must contain the three-loci footnotes for every JSON entry.
+
+### Verify bar (hard minima — reject your own draft if any fails)
+
+- **`datasets` ≥ 5**, each with a reachable `url`, a resolvable `primary_paper`, and a stated `license` (never blank; use `unknown` only when the paper declines to state one).
+- **`baselines` ≥ 5**, each with a resolvable `paper_hint` **OR** a public `code_url` (both is preferred). `code_verified` is emitted as `null` — the verification script owns the true/false write.
+- **`module_categories`** contains **3 to 6** entries. Each category description ≥ 20 chars and grounded in specific methods from the `baselines` list.
+- **`quality_gates` ≥ 3**, and each gate MUST be domain-specific: it must guard an axis or failure mode that the panels for DGAD or VQA would NOT share. Generic reproducibility / novelty / clarity gates belong in `shared/references/audit-doctrine.md`, not here. Every gate cites the canonical failure it guards against in its `rationale` field.
+- **`canonical_failures` ≥ 5**, drawn from real literature incidents or this project's own history (e.g. the Pearson-r sign flip in `memory/gnn-dynamic-phase5-pearson-fix.md`). Each entry names the `caught_by_axis` its panel expert would use.
+- **`venues` ≥ 5**, spanning at least two of {CCF-A, CCF-B, CCF-C, Workshop, Preprint}.
+- **`eval_protocols` ≥ 1**, and every protocol names its primary metric and a tolerance.
+
+If any minimum fails, do not emit the JSON block — instead emit a `## DRAFT REJECTED` block naming the missing minima and continue researching.
 
 ```markdown
 # Domain Research Report: <Field Name>

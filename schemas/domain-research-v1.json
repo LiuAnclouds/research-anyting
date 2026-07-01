@@ -1,0 +1,300 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "moon-research/domain-research-v1",
+  "title": "Moon-Research domain research report (v1)",
+  "description": "Canonical structured output emitted by the domain-researcher agent when bootstrapping a new research domain. One file per (domain, run). Shape is designed so datasets[] and baselines[] can be appended verbatim to shared/references/benchmark-registry.yaml and consumed by scripts/verify_baselines.py without transformation. Every entry MUST be backed by three-loci evidence per shared/references/audit-doctrine.md; unverifiable entries must not appear in this document.",
+  "type": "object",
+  "required": [
+    "domain_short_name",
+    "domain_description",
+    "datasets",
+    "baselines",
+    "module_categories",
+    "venues",
+    "quality_gates",
+    "eval_protocols",
+    "canonical_failures",
+    "generated_at"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "domain_short_name": {
+      "type": "string",
+      "description": "Kebab-case identifier for the domain (e.g. 'dynamic-graph-anomaly-detection', 'vision-language-action'). Used as a filename stem and as a routing key for domain-specific orchestrators.",
+      "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
+      "minLength": 2,
+      "maxLength": 64
+    },
+    "domain_description": {
+      "type": "string",
+      "description": "One to three sentence prose description of the field. Must be verifiable against the surveys listed in the accompanying human-readable report.",
+      "minLength": 20
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO8601 UTC timestamp at which the domain-researcher agent finalized this report."
+    },
+    "datasets": {
+      "type": "array",
+      "description": "Standard benchmarks and datasets for the domain. Shape matches shared/references/benchmark-registry.yaml so entries can be appended verbatim. Every entry requires three-loci evidence: primary paper, dataset landing URL, and a citation trace in at least one survey or leaderboard.",
+      "minItems": 5,
+      "items": {
+        "type": "object",
+        "required": ["name", "source", "url", "modality", "license", "primary_paper", "aliases", "notes"],
+        "additionalProperties": true,
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Canonical dataset name as used by the community (e.g. 'Reddit-Body', 'RT-2', 'MoleculeNet'). Prefer the name that resolves on Papers-with-Code / HuggingFace Datasets."
+          },
+          "source": {
+            "type": "string",
+            "description": "Origin institution, lab, or consortium that released the dataset."
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Canonical landing URL — dataset homepage, HuggingFace Datasets card, or the release repo. Must be reachable at generation time."
+          },
+          "modality": {
+            "type": "string",
+            "description": "Primary data modality (e.g. 'temporal-graph', 'image-text', 'robot-trajectory', 'tabular'). Used to route dataset loaders."
+          },
+          "n_samples": {
+            "type": ["integer", "string"],
+            "description": "Optional. Number of samples/examples. Integer preferred; string allowed only when the dataset reports a range (e.g. '10k-1M')."
+          },
+          "n_nodes": {
+            "type": ["integer", "string"],
+            "description": "Optional. For graph datasets: number of nodes."
+          },
+          "n_edges": {
+            "type": ["integer", "string"],
+            "description": "Optional. For graph datasets: number of edges."
+          },
+          "license": {
+            "type": "string",
+            "description": "SPDX identifier or human-readable license name (e.g. 'CC-BY-4.0', 'MIT', 'Apache-2.0', 'custom-research-only'). 'unknown' is permitted only when the primary paper explicitly declines to state one."
+          },
+          "primary_paper": {
+            "type": "string",
+            "description": "arXiv id, DOI, or 'Author et al., Year, Venue' string identifying the paper that introduced the dataset."
+          },
+          "aliases": {
+            "type": "array",
+            "description": "Alternate names the community uses for this dataset. Empty array is allowed.",
+            "items": {"type": "string"}
+          },
+          "notes": {
+            "type": "string",
+            "description": "Free-form notes: split conventions, common pitfalls, whether the dataset is considered 'standard' or 'emerging', known leakage issues, etc."
+          }
+        }
+      }
+    },
+    "baselines": {
+      "type": "array",
+      "description": "Classic and frontier baseline methods for the domain. Shape matches the YAML input consumed by scripts/verify_baselines.py so entries can be piped in without transformation. Every entry requires three-loci evidence: paper, code (if claimed), and citation in a survey or leaderboard.",
+      "minItems": 5,
+      "items": {
+        "type": "object",
+        "required": ["name", "year", "venue", "code_url", "paper_hint", "code_verified"],
+        "additionalProperties": true,
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Canonical method name (e.g. 'TGN', 'RT-2', 'GraphSAGE'). Match the string used in leaderboards."
+          },
+          "year": {
+            "type": "integer",
+            "minimum": 1980,
+            "maximum": 2100,
+            "description": "Publication year of the primary paper."
+          },
+          "venue": {
+            "type": "string",
+            "description": "Publication venue (e.g. 'NeurIPS 2022', 'ICLR 2023', 'arXiv preprint 2024')."
+          },
+          "code_url": {
+            "type": ["string", "null"],
+            "description": "Public code repository URL (usually GitHub). Set to null if no code has been released. scripts/verify_baselines.py will HEAD-check this URL."
+          },
+          "paper_hint": {
+            "type": "string",
+            "description": "arXiv id, DOI, or 'Author et al., Year' string. Used by scripts/paper_fetcher.py to resolve the canonical citation."
+          },
+          "code_verified": {
+            "type": ["boolean", "null"],
+            "description": "Whether scripts/verify_baselines.py has confirmed the code URL resolves. null = not yet verified (default at generation time). true = HEAD 200. false = HEAD failed or repo empty."
+          }
+        }
+      }
+    },
+    "module_categories": {
+      "type": "array",
+      "description": "Functional decomposition of methods in this domain. Each category names a reusable component slot into which papers' modules can be classified for recombination.",
+      "minItems": 3,
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "required": ["name", "description"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Short kebab-case or Title Case category label (e.g. 'temporal-encoder', 'Visual Projector', 'anomaly-scorer')."
+          },
+          "description": {
+            "type": "string",
+            "description": "One to three sentence explanation of what modules in this category do and how they compose with modules from other categories.",
+            "minLength": 20
+          }
+        }
+      }
+    },
+    "venues": {
+      "type": "array",
+      "description": "Publication venues where work in this domain typically appears. Must span at least two CCF tiers.",
+      "minItems": 5,
+      "items": {
+        "type": "object",
+        "required": ["name", "tier", "category", "url", "notes"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Canonical venue name (e.g. 'NeurIPS', 'IEEE TPAMI', 'CoRL Workshop on Language and Robotics')."
+          },
+          "tier": {
+            "type": "string",
+            "enum": ["CCF-A", "CCF-B", "CCF-C", "Workshop", "Preprint"],
+            "description": "CCF ranking or non-CCF category. Use 'Workshop' for co-located workshops, 'Preprint' for arXiv-only venues."
+          },
+          "category": {
+            "type": "string",
+            "enum": ["conference", "journal"],
+            "description": "Conference or journal. Workshops are typically 'conference'."
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Venue homepage or DBLP page."
+          },
+          "notes": {
+            "type": "string",
+            "description": "Free-form notes: typical deadline months, acceptance rate, review time, whether this venue is a primary or peripheral outlet for the domain."
+          }
+        }
+      }
+    },
+    "quality_gates": {
+      "type": "array",
+      "description": "Domain-specific quality gates that the panel will enforce. These MUST be axes that the panel experts for OTHER domains (e.g. DGAD, VQA) would not share — generic 'reproducibility' or 'novelty' gates belong in shared/references/audit-doctrine.md, not here. Example: 'VLA-G1 sim-to-real gap under 5%'. Minimum three domain-specific gates.",
+      "minItems": 3,
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "description", "axis", "threshold", "rationale"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Short identifier of the form '<DOMAIN>-G<N>' (e.g. 'TSF-G1', 'VLA-G3', 'DGAD-G2'). Must be unique within this document.",
+            "pattern": "^[A-Z][A-Z0-9]{1,7}-G[0-9]+$"
+          },
+          "name": {
+            "type": "string",
+            "description": "Short human-readable gate name (e.g. 'sim-to-real gap', 'temporal-leakage guard', 'seed-variance ceiling')."
+          },
+          "description": {
+            "type": "string",
+            "description": "What the gate checks, in one to three sentences.",
+            "minLength": 20
+          },
+          "axis": {
+            "type": "string",
+            "description": "The panel expert axis this gate belongs to (e.g. 'evaluation_rigor', 'benchmark_integrity', 'deployment_realism'). Should match an axis defined by the domain's panel expert set."
+          },
+          "threshold": {
+            "type": ["number", "string"],
+            "description": "Numeric threshold or symbolic condition that separates PASS from REVISE (e.g. 0.05, '>=3 seeds', 'no train/test node overlap')."
+          },
+          "rationale": {
+            "type": "string",
+            "description": "Why this gate is domain-specific — cite the canonical failure mode or literature incident it guards against.",
+            "minLength": 20
+          }
+        }
+      }
+    },
+    "eval_protocols": {
+      "type": "array",
+      "description": "Standard evaluation protocols the domain expects. Example: '5-seed multi-run, report mean±std', 'AUC-PR under class imbalance', 'success-rate on held-out object set'.",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name", "metric", "tolerance", "notes"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Short protocol name (e.g. '5-seed-mean-std', 'temporal-split-eval', 'held-out-object-success-rate')."
+          },
+          "metric": {
+            "type": "string",
+            "description": "Primary metric produced by the protocol (e.g. 'AUC-ROC', 'AUC-PR', 'success_rate', 'MAE', 'BLEU-4')."
+          },
+          "tolerance": {
+            "type": ["number", "string"],
+            "description": "Numeric tolerance for reporting (e.g. 0.005 for AUC, '±1 std across seeds') or symbolic description."
+          },
+          "notes": {
+            "type": "string",
+            "description": "Free-form notes: which papers established this protocol, common deviations, when the protocol was updated."
+          }
+        }
+      }
+    },
+    "canonical_failures": {
+      "type": "array",
+      "description": "Seed events analogous to the Pearson-r incident (see memory/gnn-dynamic-phase5-pearson-fix.md) — real failures documented in the literature or this project's own history that the panel must guard against. Each failure must name the axis whose expert catches it.",
+      "minItems": 5,
+      "items": {
+        "type": "object",
+        "required": ["name", "class", "description", "caught_by_axis"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Short human-readable name for the failure (e.g. 'Pearson-r sign flip', 'phantom SOTA baseline', 'temporal test leakage')."
+          },
+          "class": {
+            "type": "string",
+            "enum": [
+              "numeric-drift",
+              "hallucinated-baseline",
+              "ablation-mismatch",
+              "temporal-leakage",
+              "metric-substitution",
+              "seed-cherry-pick",
+              "sim-to-real-gap",
+              "dataset-contamination",
+              "citation-fabrication",
+              "other"
+            ],
+            "description": "Coarse failure class. Extend the enum only via a schema bump."
+          },
+          "description": {
+            "type": "string",
+            "description": "One to three sentence description of the failure and how it appeared in the literature or in this project.",
+            "minLength": 20
+          },
+          "caught_by_axis": {
+            "type": "string",
+            "description": "The panel expert axis whose checks would surface this failure (e.g. 'evaluation_rigor', 'baseline_provenance'). Must correspond to an axis used by the domain's panel."
+          }
+        }
+      }
+    }
+  }
+}

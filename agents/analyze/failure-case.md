@@ -40,6 +40,8 @@ The decision rule: if call B's prompt does NOT depend on call A's *output conten
 
 ## Workflow
 
+Also read `<domain>/references/quality-gates.md` if it exists and score any gate axes declared there as additional advisory findings.
+
 1. Open `sections/05_experiments.tex` and `sections/07_conclusion.tex`. Search for the words "fail", "underperform", "weakness", "limitation".
 2. Count distinct failure modes named. <2 → score `failure-coverage` ≤60.
 3. For each named failure mode, verify there's a cell it points to.

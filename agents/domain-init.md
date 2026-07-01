@@ -71,6 +71,55 @@ After the subagent completes, verify: at least 3 surveys identified, at least 5 
 
 ### Phase 2: Generate Domain Structure
 
+#### Parallel Dispatch Protocol for domain-init
+
+> **Doctrine citation** (`shared/references/parallelism-doctrine.md`): *"When dispatching work that does not have a strict data dependency on the result of an earlier dispatch, you MUST dispatch concurrently. Default-parallel is the contract. Default-serial is the exception that requires written justification."*
+
+Phase 2 has exactly **one** upstream data source: the Domain Research Report produced in Phase 1 (`domain-researcher.json`). Every artifact this phase creates reads that report and nothing else — none of the File 1-7 creations, none of the Phase 2b registry extension, and none of the quality-gates.md rendering consumes the output of another Phase 2 step. Phase 2c (memory seed) is entirely independent of the Phase 1 report — it operates on `knowledge-base/experts/_seed/*` and existing agent frontmatter — so it does not even need to wait for `domain-researcher.json`.
+
+**Contract**: All independent Phase 2 sub-work MUST be dispatched in a single fan-out message. From a workflow, use `parallel([() => createFile1, () => createFile2, ..., () => extendRegistry, () => seedMemory])`. From the main loop / Agent tool, issue all `Agent` tool calls in the **same message** with `run_in_background: true`, then collect their outputs together. The runtime caps concurrency; you do not throttle.
+
+#### Data-dependency table
+
+| Step | Depends on |
+|---|---|
+| `domain-researcher.json` (Phase 1 output) | (root of DAG — Phase 0 validated input) |
+| File 1: `<short-name>/SKILL.md` | `domain-researcher.json` |
+| File 2: `<short-name>/references/papers.md` | `domain-researcher.json` |
+| File 3: `<short-name>/references/datasets.md` | `domain-researcher.json` |
+| File 4: `<short-name>/references/ideas.md` | `domain-researcher.json` |
+| File 4b: `<short-name>/references/quality-gates.md` | `domain-researcher.json` |
+| File 5: `agents/<short-name>-idea-broker.md` | `domain-researcher.json` |
+| File 6: `agents/<short-name>-rapid-prototype.md` | `domain-researcher.json` |
+| File 7: `agents/<short-name>-insight-analyzer.md` | `domain-researcher.json` |
+| Phase 2b: benchmark-registry extend | `domain-researcher.json` |
+| Phase 2c: memory seed (`domain_init_seed_memories.py`) | (independent — reads `_seed/*` + existing agents) |
+| RAG index rebuild (`build_expert_index.py --all`) | Phase 2c memory seed must complete first |
+
+Everything in the rows whose "Depends on" is `domain-researcher.json` is at the same DAG level: none of them consume any other row's output. All of them, **together with Phase 2c**, dispatch in one fan-out message. Only the RAG index rebuild is genuinely serial — it must run after Phase 2c's memory files land on disk (this is the one and only intra-phase barrier).
+
+**Fan-out shape (single message)**:
+
+```
+Agent(create SKILL.md,               run_in_background: true) ─┐
+Agent(create papers.md,              run_in_background: true) ─┤
+Agent(create datasets.md,            run_in_background: true) ─┤
+Agent(create ideas.md,               run_in_background: true) ─┤
+Agent(create quality-gates.md,       run_in_background: true) ─┤  All 11 dispatch
+Agent(create idea-broker.md,         run_in_background: true) ─┤  in ONE message.
+Agent(create rapid-prototype.md,     run_in_background: true) ─┤  Harness runs
+Agent(create insight-analyzer.md,    run_in_background: true) ─┤  them concurrently.
+Bash(python domain_init_extend_registry.py <report>,
+     run_in_background: true)                                  ─┤
+Bash(python domain_init_seed_memories.py,
+     run_in_background: true)                                  ─┘
+
+# Barrier: wait for all above via TaskOutput()
+Bash(python build_expert_index.py --all)   # serial: reads Phase 2c output
+```
+
+#### File creations (all independent — dispatch together)
+
 Based on the Domain Research Report, create the directory structure:
 
 ```bash
@@ -79,7 +128,7 @@ mkdir -p knowledge-base/modules/<short-name>/{<category-1>,<category-2>,...,<cat
 mkdir -p <short-name>/references
 ```
 
-Create the following files:
+Create the following files (all in the same fan-out; each reads only `domain-researcher.json`):
 
 **File 1: `<short-name>/SKILL.md`** — Domain orchestrator. Template:
 
@@ -119,18 +168,101 @@ Load domain knowledge from `<short-name>/references/`.
 
 **File 4: `<short-name>/references/ideas.md`** — Research directions with falsifiable hypotheses, derived from the open problems identified in the Domain Research Report.
 
+**File 4b: `<short-name>/references/quality-gates.md`** — Domain-specific quality gates that supplement the general audit-panel gates. Populate from the `quality_gates[]` array in the Domain Research Report JSON. Each entry has fields `{id, name, panel_expert, axis, threshold, rationale}`; render them into the following template:
+
+```markdown
+# Domain-Specific Quality Gates — <domain-short-name>
+
+Panel-specific axes that supplement the general audit-panel gates for this domain. See `shared/references/domain-quality-gates.md` for the canonical spec.
+
+| ID | Name | Panel Expert / Axis | Threshold | Rationale |
+|---|---|---|---|---|
+| <SHORT>-G1 | ... | <expert> / <axis> | ... | ... |
+| <SHORT>-G2 | ... | <expert> / <axis> | ... | ... |
+| ...        | ... | ...                 | ... | ... |
+```
+
+The `panel_expert` field must be one of `r2-experiments`, `dataset-fitness`, `metric-validity`, `failure-case` (or another named audit-panel agent). If the Domain Research Report did not produce a `quality_gates[]` array, dispatch the domain-researcher subagent a second time with the prompt "Identify 3-6 domain-specific quality gates for `<short-name>` following the schema in `shared/references/domain-quality-gates.md`" before writing this file.
+
 **File 5: `agents/<short-name>-idea-broker.md`** — Domain-specific Idea Broker agent, adapted from the GNN Idea Broker template with the domain's literature tree, challenge-insight mapping, and key venues.
 
 **File 6: `agents/<short-name>-rapid-prototype.md`** — Domain-specific Rapid Prototype agent with minimal viable experiment configurations appropriate to the domain's standard benchmarks.
 
 **File 7: `agents/<short-name>-insight-analyzer.md`** — Domain-specific Insight Analyzer with analysis dimensions appropriate to the domain's typical evaluation metrics and failure modes.
 
+### Phase 2b: Extend Benchmark Registry
+
+*Dispatched in the Phase 2 fan-out — reads `domain-researcher.json`, writes to `benchmark-registry.yaml`; no dependency on Files 1-7.*
+
+Run: `python scripts/domain_init_extend_registry.py <path/to/domain-research.json>`
+
+This appends the new domain's benchmark datasets into `shared/references/benchmark-registry.yaml`
+with `domain=<short-name>` and `verified_at: pending`. The `hallucination-expert`, `r2-experiments`,
+`dataset-fitness`, and `reproducibility` panels will now find these datasets on lookup
+without falling back to `paper_fetcher`.
+
+If the script reports collisions, review them — usually means the domain-researcher found an
+alias for an existing dataset (e.g. someone re-named MMLU). Capture the reported `added` count
+so it can be included in the Phase 4 report.
+
+Exit codes: 0 = clean append; 1 = collisions were found and skipped (report them, don't retry
+blindly); 2 = IO error.
+
+### Phase 2c: Seed Expert Memory
+
+*The `domain_init_seed_memories.py` call is dispatched in the Phase 2 fan-out — it is fully independent of `domain-researcher.json` (it only reads `_seed/*` and existing expert frontmatter). The `build_expert_index.py --all` call is the ONE genuine serial barrier in this phase — it must run after `domain_init_seed_memories.py` completes, because it indexes the files that pass writes.*
+
+For every expert in the 6 audit panels (30 experts total), append the domain-agnostic canonical failures from `knowledge-base/experts/_seed/generic-canonical-failures.md` into that expert's `knowledge-base/experts/<expert-name>/memory.md` (creating the file if absent). Filter by axis — each expert receives only the seed events relevant to its critical_axes.
+
+Then run: python scripts/build_expert_index.py --all  (regenerates RAG indices so the new seed events are searchable).
+
+Concretely, dispatch (first line in the Phase 2 fan-out, second line only after the barrier):
+
+```bash
+python scripts/domain_init_seed_memories.py   # in Phase 2 fan-out
+# --- barrier: wait for all Phase 2 dispatches ---
+python scripts/build_expert_index.py --all    # serial: reads Phase 2c output
+```
+
+The first pass parses the 8 canonical failures out of the seed file, reads each expert's `critical_axes` from its `agents/**/<expert>.md` frontmatter, and appends only the axis-matching seed entries per expert. The second pass rebuilds the sentence-transformer indices so downstream `expert_retrieve.py` calls surface seed events alongside real encounters. A brand-new domain therefore starts with pre-loaded class-of-bug awareness even before its own experts have run once.
+
 ### Phase 3: Initialize KB
+
+#### Parallel Dispatch Protocol for Phase 3
+
+> **Doctrine citation** (`shared/references/parallelism-doctrine.md`): *"If you can split it, you must split it."*
+
+All four KB scaffolding operations below touch **different files** and read only the Domain Research Report + existing INDEX.md contents. None of them consumes the output of another. Steps 1 and 2 create *new* files; steps 3 and 4 append/edit *disjoint* existing INDEX.md files (`knowledge-base/INDEX.md` + `knowledge-base/papers/INDEX.md` in step 3, `knowledge-base/venues/INDEX.md` in step 4). There is no read-after-write dependency between any pair.
+
+**Contract**: dispatch all four in a single fan-out message. Same shape as Phase 2 — a single message with four `Agent` (or `Edit`/`Write`) tool calls with `run_in_background: true` where applicable, awaited together.
+
+| Step | Depends on |
+|---|---|
+| 1. `knowledge-base/papers/<short-name>/INDEX.md` (new) | Phase 1 report only |
+| 2. `knowledge-base/modules/<short-name>/INDEX.md` (new) | Phase 1 report only |
+| 3. Register domain in `knowledge-base/INDEX.md` + `knowledge-base/papers/INDEX.md` | Phase 1 report only |
+| 4. Add venue entries to `knowledge-base/venues/INDEX.md` | Phase 1 report only |
+
+Steps (dispatched together, not sequentially):
 
 1. Create `knowledge-base/papers/<short-name>/INDEX.md`.
 2. Create `knowledge-base/modules/<short-name>/INDEX.md` with entries for each module category.
 3. Add the domain to `knowledge-base/INDEX.md` and `knowledge-base/papers/INDEX.md`.
 4. Add venue entries for any venues not already in `knowledge-base/venues/INDEX.md`.
+
+The numbering is narrative order for the reader, **not** dispatch order — dispatch order is "all at once."
+
+### Anti-pattern warning (Phases 2 and 3)
+
+The following orchestration shapes are **bugs in the orchestrator** per `shared/references/parallelism-doctrine.md` and MUST NOT appear in any domain-init execution trace:
+
+- **Do NOT** dispatch each file with a separate `await` — e.g. `await createSkillMd; await createPapersMd; await createDatasetsMd; ...`. That's 8× the wall-clock for zero gain.
+- **Do NOT** wait for File 1 (SKILL.md) to land before starting File 2 (papers.md). They share zero data — SKILL.md does not reference papers.md's content and vice versa; both read only `domain-researcher.json`.
+- **Do NOT** wait for Phase 2b (registry extend) before starting Phase 2c (memory seed). They touch disjoint files (`benchmark-registry.yaml` vs `knowledge-base/experts/*/memory.md`) and share no data.
+- **Do NOT** wait for Phase 2 to fully drain before starting Phase 3's *file creations* if you can start them in the same fan-out — the KB INDEX writes read only the Phase 1 report, same as Phase 2. (The only reason to keep Phase 3 as a separate barrier is if the Phase 4 report needs the Phase 2 collision counts; otherwise you can collapse Phase 2 + Phase 3 file writes into a single mega-fanout.)
+- **Do NOT** dispatch INDEX.md steps 1→2→3→4 serially "so the log reads in order." Logging order is not a data dependency — dispatch them together and log when they all return.
+
+A serial domain-init is a **contract violation**. The runtime already caps concurrency; the orchestrator's job is to *offer* maximum fan-out, not to throttle it manually.
 
 ### Phase 4: Report
 
@@ -140,6 +272,7 @@ Report a summary:
 - Surveys catalogued: N
 - Baselines catalogued: N
 - Datasets catalogued: N
+- Benchmark-registry entries added: N (from Phase 2b `added` count; note any collisions skipped)
 - Venues mapped: N
 - Agent definitions created: 3 domain-specific + 6 shared (inherited)
 - Next steps: `/ <UPPER-SHORT-NAME> survey "topic"` to begin literature survey, `/ <UPPER-SHORT-NAME> idea "topic"` to generate research directions.

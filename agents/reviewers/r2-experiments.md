@@ -40,6 +40,8 @@ The decision rule: if call B's prompt does NOT depend on call A's *output conten
 
 ## Workflow
 
+Also read `<domain>/references/quality-gates.md` if it exists and score any gate axes declared there as additional advisory findings.
+
 1. Open `sections/05_experiments.tex`. Extract the main-results table cells.
 2. For each baseline named, look it up in `benchmark-registry.yaml` and via `scripts/verify_baselines.py` if a YAML manifest exists. Flag any baseline not findable on Semantic Scholar / arXiv / DBLP / CrossRef.
 3. Count distinct seeds; require ≥5. Count datasets; require ≥3 for CCF-B, ≥5 for CCF-A.

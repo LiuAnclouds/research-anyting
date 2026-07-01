@@ -43,6 +43,10 @@ The decision rule: if call B's prompt does NOT depend on call A's *output conten
 | `license-respected` | no | Each dataset's use respects its license. |
 | `preprocessing-honest` | no | Any preprocessing (subsampling, edge filtering, temporal cuts) is documented and not silently restrictive. |
 
+## Workflow
+
+Also read `<domain>/references/quality-gates.md` if it exists and score any gate axes declared there as additional advisory findings.
+
 ## Output
 
 JSON only.
