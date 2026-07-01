@@ -282,74 +282,70 @@ When a gate FAILS, the pipeline auto-retries (up to 3x) or flags to human depend
 | G5 | WRITE panel aggregate >= 90 (5 experts) | PASS → auto-advance; FAIL → auto-revise via audit-loop.js (max 10 rounds, then escalate) |
 | G6 | REVIEW panel aggregate >= 90 (5 reviewers, P1) | PASS → auto-complete; FAIL → auto-revise via audit-loop.js |
 
-## Command Interface
+## Command Reference
 
-```
-/mr auto "topic"                → Full pipeline, auto-advance at all gates (no prompts)
-/mr auto "topic" --parallel N   → Set max concurrent agents to N (default: unlimited)
-/mr auto "topic" --human-gates  → Human approval required at each gate transition
-/mr auto "topic" --stop-at X    → Stop at phase: explore|design|validate|analyze|write|review
-/mr auto "topic" --target X     → Calibrate for CCF-A/B/C
-/mr auto "topic" --dry-run      → Plan without executing
-/mr auto status                 → Current pipeline status
-/mr auto resume                 → Continue from last checkpoint (delegates to /mr resume)
-/mr resume                      → Print recovery plan from knowledge-base/_state.json
-                                  (runs scripts/mr_resume.py; exits 4 if no state file)
-```
+Canonical spec: see COMMANDS.md at plugin root.
 
-### Global Commands
+All commands use the `/mr` prefix. Suffix flags `--target N`, `--max-rounds N`, `--no-audit`, `--legacy` apply to every per-domain research verb below; global flags `--human-gates`, `--stop-at <phase>`, `--parallel N`, `--dry-run` apply to `full` runs.
 
-These commands operate across any phase and read from the shared
-`knowledge-base/_state.json` snapshot written by `workflows/audit-loop.js`
-after every audit round (schema: `schemas/state-v1.json`).
+### Table A — Per-domain research verbs
+
+Invoked as `/mr <domain> <verb>` where `<domain>` is `gnn`, `vla-vlm`, `vla`, `vlm`, or any user-created domain via `/mr new-domain`.
+
+| Verb | Description | Backing agent(s) |
+|------|-------------|------------------|
+| `idea "topic"` | Generate 3-5 candidate research directions | idea-broker |
+| `survey "topic"` | Systematic literature survey (15+ sources) | literature-survey + EXPLORE panel |
+| `read <paper>` | Deep paper read + module decomposition | paper-reader |
+| `theory` | Formal problem statement + algorithm design + complexity | theory-crafter + DESIGN panel |
+| `prototype "approach"` | Minimum viable experiment (1-2 datasets, 1-2 baselines) | rapid-prototype |
+| `experiment` | Full experiment matrix (5 datasets × 7+ baselines × 5 seeds) | experiment-engineer + VALIDATE panel |
+| `analyze <results>` | Statistical analysis + narrative construction | insight-analyzer + ANALYZE panel |
+| `write` | Draft manuscript sections + figures | paper-writer + WRITE panel |
+| `review <manuscript>` | 5-reviewer audit panel (r1/r2/eic/reproducibility/devils-advocate) | reviewer panel + REVIEW panel |
+| `full "hypothesis"` | Run the complete 6-phase pipeline for this domain | moon-pipeline |
+
+### Table B — Knowledge base commands
+
+All backed by `kb-manager`.
+
+| Command | Description |
+|---------|-------------|
+| `/mr ideas [--domain] [--status]` | List all ideas across the KB |
+| `/mr paper <slug>` | Show paper details + module decomposition |
+| `/mr module <slug>` | Show module details + composability metadata |
+| `/mr venue <slug>` | Show venue details + submission requirements |
+| `/mr papers [--domain] [--tier]` | Browse the paper library |
+| `/mr modules [--domain] [--category]` | Browse the module library |
+| `/mr venues [--tier] [--domain]` | Browse the venue library |
+| `/mr search "query"` | Cross-KB unified search |
+| `/mr decompose <paper>` | Decompose a paper into reusable modules |
+| `/mr combinations` | Recompute K-way module combination hypergraph |
+| `/mr recommend-venue <idea>` | Recommend target venues for an idea |
+| `/mr store` | Persist current session state to KB |
+| `/mr recall "query"` | Restore prior context from KB |
+| `/mr kb-check` | Validate KB integrity (schemas, cross-refs) |
+| `/mr fuse` | Merge and deduplicate KB entries |
+| `/mr export idea\|bib <target>` | Export data (idea package or bib file) |
+
+### Table C — System commands
 
 | Command | Description | Backed by |
 |---------|-------------|-----------|
-| `/mr resume` | Print a human-friendly recovery plan from the last audit round (project, phase, decision, unresolved findings/vetoes, suggested next command, optional `--target N` override). Pass `--kb-root PATH` to point at a non-default KB; `--out report.json` for a machine-readable copy. Exit 4 if `_state.json` is missing. | `scripts/mr_resume.py` |
-| `/mr auto status` | Show current pipeline status (same data, terser). | `scripts/mr_resume.py` (summary mode) |
-| `/mr auto resume` | Alias of `/mr resume` that also re-launches the next round when one is recommended. | `scripts/mr_resume.py` + `workflows/*-pipeline.js` |
-
-### Per-phase flags (P2)
-
-Every phase command also accepts a uniform set of audit-loop flags,
-parsed by `workflows/_args.js`:
-
-```
-/mr <phase> --no-audit             Skip the audit panel; run executor only.
-/mr <phase> --target N             Override the aggregate pass threshold (default 90).
-/mr <phase> --max-rounds N         Override the audit-loop round cap (default 10).
-/mr <phase> --legacy               Use the deprecated single-agent wrapper for this phase.
-```
-
-These compose with the global `--human-gates` / `--stop-at` flags above.
-Examples:
-
-```
-/mr write --target 85 --max-rounds 5   # Looser write-gate for early drafts
-/mr review --legacy                    # Old single-shot review-simulator
-/mr explore --no-audit                 # Skip the EXPLORE panel (fast iteration)
-```
-
-## Global Commands
-
-These commands are pipeline-wide utilities, available at any time regardless
-of which phase is active. They do not advance the audit-loop state.
-
-| Command | Agent | Function |
-|---------|-------|----------|
-| `/mr cost [--budget USD]` | kb-manager | Report estimated cost across all audit rounds, optionally check against budget cap. |
-| `/mr dag` | moon-pipeline | Render the 6-phase × 5-expert pipeline graph; mark current state. |
-
-Implementation:
-
-- `/mr cost` shells out to `scripts/mr_cost.py`, which wraps
-  `scripts/audit_budget_report.py` and prints a Markdown-style phase
-  rollup. With `--budget USD`, prints remaining balance.
-- `/mr dag` shells out to `scripts/mr_dag.py`, which renders the
-  hardcoded 6-phase × 5-expert tree from this file plus the temperature
-  rotation table from `workflows/audit-loop.js`. If
-  `knowledge-base/_state.json` is present, the current phase row is
-  annotated with `◀── HERE`.
+| `/mr new-domain <name> "<desc>"` | Create a new research domain | scripts/mr_new_domain.py |
+| `/mr health [<domain>\|--all]` | Score domain completeness (P5) | scripts/mr_health.py |
+| `/mr cost [--budget USD]` | Audit-round cost rollup; optional budget check (P4) | scripts/mr_cost.py → scripts/audit_budget_report.py |
+| `/mr dag` | Render the 6-phase × 5-expert pipeline graph (P4) | scripts/mr_dag.py |
+| `/mr resume` | Print recovery plan from `knowledge-base/_state.json` (P4); exit 4 if missing | scripts/mr_resume.py |
+| `/mr status [--domain]` | Terse pipeline status (summary of `_state.json`) | scripts/mr_resume.py (summary mode) |
+| `/mr init` | Initialize a KB / project scaffold | scripts/mr_init.py |
+| `/mr config <key> <value>` | Read/write plugin config (e.g. `kb.auto_store on\|off`) | scripts/mr_config.py |
+| `/mr log` | Show the research log | kb-manager |
+| `/mr discuss "question"` | Mentor / peer / skeptic three-role discussion | discussion-agent |
+| `/mr rebuttal <reviews>` | Point-by-point reviewer rebuttal | rebuttal-agent |
+| `/mr present` | Generate defense / group-meeting slides | present-agent |
+| `/mr alert` | Latest-literature monitoring | alert-agent |
+| `/mr help` | Show this command reference | — |
 
 ## Auto-Advance Behavior
 

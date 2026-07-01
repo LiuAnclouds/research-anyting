@@ -1,141 +1,112 @@
 # /mr — Moon-Research Command Reference
 
-All commands use the `/mr` prefix. This prevents conflicts with other Claude Code plugins.
+Canonical single-source-of-truth for every `/mr` command. All commands use the `/mr` prefix to avoid collision with other Claude Code plugins.
 
-## Domain Research
+Structure: **A.** per-domain research verbs · **B.** knowledge base · **C.** system · **D.** domain extensibility · **E.** deprecated.
 
-```
-/mr gnn <cmd>              GNN 图神经网络研究
-/mr vla-vlm <cmd>          VLA-VLM 多模态+具身智能
-/mr vla <cmd>              VLA 子域
-/mr vlm <cmd>              VLM 子域
-/mr <domain> <cmd>         用户创建领域 (via /mr new-domain)
-```
+---
 
-每个领域的 `<cmd>`:
-```
-idea "topic"                生成研究方向
-survey "topic"              系统文献调研 (15+来源)
-read <paper>                深度论文精读
-theory                      数学推导+算法设计
-prototype "approach"        快速可行性验证 (1-2天)
-experiment [--monitor]      完整实验 (--monitor 实时监控)
-analyze <results>           根因分析+叙事构建
-verify                      独立验证所有声称
-review <manuscript>         4角色预审稿
-explore "topic"             探索三件套 (idea→survey→read)
-full "hypothesis"           完整9Agent流水线
-auto "topic"                自主全流程
-```
+## A. Research per-domain commands
 
-## Autonomous Pipeline
+The 10 canonical verbs. Every domain (`gnn`, `vla-vlm`, `vla`, `vlm`, and any domain created via `/mr new-domain`) receives them by default. Listed in canonical pipeline order.
 
-```
-/mr auto "topic"                       全自主6阶段管线
-/mr auto "topic" --human-gates         关键节点人工审批
-/mr auto "topic" --stop-at <phase>     运行到指定阶段
-/mr auto "topic" --target <tier>       按CCF等级校准
-/mr auto "topic" --dry-run             预演不执行
-/mr auto status                        查看当前进度
-/mr auto resume                        从断点恢复
-```
+| Command | Backing agent | Purpose |
+|---|---|---|
+| `/mr <domain> idea "<topic>"` | `agents/<domain>-idea-broker.md` | Generate 3-5 candidate directions with falsifiable hypotheses |
+| `/mr <domain> survey "<topic>"` | `agents/literature-survey.md` | Systematic multi-source literature review |
+| `/mr <domain> read <paper>` | `agents/paper-reader.md` | Three-pass deep read of a specific paper |
+| `/mr <domain> theory` | `agents/theory-crafter.md` | Formalize + prove + complexity analysis |
+| `/mr <domain> prototype` | `agents/<domain>-rapid-prototype.md` | Minimum viable experiment |
+| `/mr <domain> experiment` | `agents/experiment-engineer.md` | Full experiment matrix, 5 seeds |
+| `/mr <domain> analyze` | `agents/<domain>-insight-analyzer.md` | Extract insights + narrative from results (ANALYZE panel) |
+| `/mr <domain> write` | `agents/paper-writer.md` via `workflows/paper-writing-pipeline.js` | Manuscript writing (WRITE panel, loop-until-90) |
+| `/mr <domain> review` | `agents/reviewers/*.md` via audit-loop | 5-reviewer panel (REVIEW panel, loop-until-90) |
+| `/mr <domain> full "<hypothesis>"` | `workflows/<domain>-full-pipeline.js` | Full 6-phase pipeline with all quality gates |
 
-## Literature & Discovery
+### Suffix flags
 
-```
-/mr search "query"                     跨KB统一搜索
-/mr papers [--domain] [--tier]         论文库浏览
-/mr paper <slug>                       论文详情+模块分解
-/mr modules [--domain] [--category]    模块库浏览
-/mr module <slug>                      模块详情+可组合性
-/mr alert                              最新文献监控
-```
+Applicable to any per-domain verb. Default execution is parallel per the parallelism-doctrine; serial fallback requires explicit justification.
 
-## Idea Management
+| Flag | Effect |
+|---|---|
+| `--target N` | Override the ≥90 aggregate threshold |
+| `--max-rounds N` | Override the 10-round audit-loop cap |
+| `--no-audit` | Skip the panel audit for this phase (executor only) |
+| `--legacy` | Use the pre-panel single-agent path |
 
-```
-/mr ideas [--domain] [--status]        全部Idea列表
-/mr idea <slug>                        Idea详情 (模块+论文+期刊)
-/mr idea promote <slug>                孵育→活跃
-/mr idea discard <slug>                放弃+记录原因
-/mr combinations                       重新计算K-way超图
-/mr decompose <paper>                  论文→模块分解
-```
+---
 
-## Construction
+## B. Knowledge base commands
 
-```
-/mr code-gen                           理论→可执行代码
-/mr hyperopt                           系统化超参调优
-/mr preprocess                         数据准备+标准化
-```
+Cross-domain, all backed by `agents/kb-manager.md` unless noted.
 
-## Debugging
+| Command | Purpose |
+|---|---|
+| `/mr ideas [--domain X] [--status Y]` | List ideas |
+| `/mr paper <slug>` | Show paper entry |
+| `/mr module <slug>` | Show module entry |
+| `/mr venue <slug>` | Show venue entry |
+| `/mr papers [--domain X] [--tier Y] [--code]` | List papers with filters |
+| `/mr modules [--domain X] [--category Y]` | List modules |
+| `/mr venues [--tier X] [--domain Y]` | List venues |
+| `/mr search "<query>"` | Cross-KB fuzzy search |
+| `/mr decompose <paper>` | Extract modules from a paper |
+| `/mr combinations` | Recompute idea hypergraph |
+| `/mr recommend-venue <idea>` | Rank venues for an idea |
+| `/mr store <session\|paper\|module>` | Persist to KB |
+| `/mr recall "<query>"` | Retrieve KB context |
+| `/mr kb-check` | KB integrity + `audit_status` scan (P3) |
+| `/mr fuse` | Consolidate related KB entries |
+| `/mr export idea\|bib\|module <target>` | Export a KB entry |
 
-```
-/mr debug                              实验失败根因诊断
-/mr monitor                            训练实时监控
-```
+---
 
-## Venue & Submission
+## C. System commands
 
-```
-/mr venues [--tier] [--domain]         期刊数据库浏览
-/mr venue <slug>                       期刊详情+投稿要求
-/mr recommend-venue <idea>             为Idea推荐目标期刊
-```
+Meta-level; not tied to any domain.
 
-## Writing
+| Command | Backing | Purpose |
+|---|---|---|
+| `/mr new-domain <name> "<desc>"` | `agents/domain-init.md` | Bootstrap a new research domain (P5) |
+| `/mr health [<domain>\|--all]` | `scripts/mr_health.py` | 0-100 completeness score across 8 rubric checks (P5) |
+| `/mr cost [--budget USD]` | `scripts/mr_cost.py` | Cost report across audit rounds (P4) |
+| `/mr dag` | `scripts/mr_dag.py` | ASCII visualization of the 6-phase pipeline (P4) |
+| `/mr resume` | `scripts/mr_resume.py` | Recover from `_state.json` + last audit round (P4) |
+| `/mr status [--domain X]` | `agents/kb-manager.md` | Overall pipeline status |
+| `/mr init [<project-name>]` | `agents/project-init.md` | Initialize a new project |
+| `/mr config <key> <value>` | shell config write | Set config (`kb.root`, `kb.auto_store`, `projects.root`, ...) |
+| `/mr log` | `agents/research-log.md` | Daily research log |
+| `/mr discuss "<question>"` | `agents/deep-discussion.md` | Open-ended discussion |
+| `/mr rebuttal <reviews>` | `agents/rebuttal-writer.md` | Response to peer review |
+| `/mr present` | `agents/presentation-builder.md` | Build presentation slides |
+| `/mr alert` | `agents/literature-alert.md` | Subscribe to arXiv new-paper alerts |
+| `/mr help` | inline | List all commands |
 
-```
-/mr write "section" → "venue"          分节生成论文
-/mr rebuttal <reviews>                 逐条审稿回复
-/mr present                            生成答辩/组会PPT
-```
+---
 
-## Discussion
+## D. Domain extensibility
 
-```
-/mr discuss "question"                 导师/同行/质疑者三角色
-```
+A new domain may add verbs beyond the 10 canonical ones.
 
-## Knowledge Base
+Rule:
 
-```
-/mr store session info                 手动持久化当前session
-/mr auto-store on|off                  自动持久化开关
-/mr recall "query"                     从KB恢复上下文
-/mr kb-check                           KB完整性验证
-/mr fuse                               KB条目合并去重
-```
+1. Add a row to `<domain>/SKILL.md` routing table: `/mr <domain> <verb>` → `agents/<domain>-<verb>.md`.
+2. Create `agents/<domain>-<verb>.md` with proper frontmatter (`rigor_contract` + `parallelism_contract`).
+3. The verb becomes routable through `/mr` transparently; no core changes required.
 
-## Management
+Example: `/mr vla-vlm sim2real "task"` dispatches `agents/vla-vlm-sim2real.md`.
 
-```
-/mr new-domain <name> "<desc>"         创建新研究领域
-/mr status [--domain]                  管线概览
-/mr log                                科研日志
-/mr export idea|bib <target>           导出数据
-/mr help                               显示此命令参考
-```
+---
 
-## Quick Examples
+## E. Deprecated / removed commands
 
-```bash
-# 探索方向
-/mr gnn idea "dynamic graph anomaly detection"
+Kept here for backward-compat awareness only. Do not use.
 
-# 系统调研
-/mr gnn survey "heterophilic GNN 2022-2025"
-
-# 一键全流程
-/mr auto "heterophily-aware dynamic graph anomaly detection"
-
-# 跨session恢复
-/mr auto-store on
-/mr recall "active GNN hypotheses"
-
-# 创建新领域
-/mr new-domain nlp "NLP with Large Language Models"
-/mr nlp idea "efficient fine-tuning"
-```
+| Old | Replacement |
+|---|---|
+| `/mr auto ...` | `/mr <domain> full` |
+| `/mr code-gen`, `/mr preprocess`, `/mr hyperopt`, `/mr monitor`, `/mr debug` | never implemented, removed |
+| `/mr <domain> explore` | use `idea` + `survey` |
+| `/mr <domain> verify` | merged into `review` |
+| `/idea`, `/paper`, `/venue`, `/module` (unprefixed) | always use `/mr <cmd>` |
+| `/mr auto-store on\|off` | `/mr config kb.auto_store on\|off` |

@@ -5,43 +5,40 @@ description: This skill should be used when the user types "/mr gnn", references
 
 # GNN Research Domain Orchestrator
 
-This orchestrator manages a nine-agent research pipeline for GNN research. Each phase dispatches a specialized subagent using the `Agent` tool. Subagents are stateless: each receives complete input context and produces a complete output. The orchestrator handles quality gate verification between phases.
+See `../../COMMANDS.md` for the full command reference. This file only documents `/mr gnn` routing.
 
-## Command Routing
+This orchestrator manages the GNN research pipeline. Each phase dispatches a specialized subagent using the `Agent` tool. Subagents are stateless: each receives complete input context and produces a complete output. The orchestrator handles quality gate verification between phases.
 
-### Research Commands
+## Command Routing (canonical 10 verbs)
 
-| Command | Agent Dispatched | Phase |
-|---------|-----------------|-------|
-| `/mr gnn idea "topic"` | gnn-idea-broker | Exploration |
-| `/mr gnn survey "topic"` | literature-survey | Exploration |
-| `/mr gnn read <paper>` | paper-reader | Exploration |
-| `/mr gnn theory` | theory-crafter | Construction |
-| `/mr gnn prototype "approach"` | gnn-rapid-prototype | Construction |
-| `/mr gnn experiment` | experiment-engineer | Construction |
-| `/mr gnn experiment --monitor` | experiment-engineer + experiment-monitor | Construction |
-| `/mr gnn analyze <results>` | gnn-insight-analyzer | Validation |
-| `/mr gnn verify` | deep-verification | Validation |
-| `/mr gnn review <manuscript>` | review-simulator | Validation |
-| `/mr gnn explore "topic"` | idea-broker -> literature-survey -> paper-reader (sequential) | Full Exploration |
-| `/mr gnn full "hypothesis"` | All nine agents with quality gates | Full Pipeline |
+Every domain in Moon-Research exposes exactly the same 10 verbs. GNN's routing:
 
-### Knowledge Base Commands
+| Command | Backing agent | Purpose |
+|---------|---------------|---------|
+| `/mr gnn idea "topic"` | `agents/gnn-idea-broker.md` | Generate 3-5 candidate research directions |
+| `/mr gnn survey "topic"` | `agents/literature-survey.md` | Systematic literature review |
+| `/mr gnn read <paper>` | `agents/paper-reader.md` | Three-pass paper read |
+| `/mr gnn theory` | `agents/theory-crafter.md` | Formalize + prove |
+| `/mr gnn prototype` | `agents/gnn-rapid-prototype.md` | Minimum viable experiment (MVE) |
+| `/mr gnn experiment` | `agents/experiment-engineer.md` | Full experiment matrix |
+| `/mr gnn analyze` | `agents/gnn-insight-analyzer.md` via ANALYZE panel | Extract insights |
+| `/mr gnn write` | `agents/paper-writer.md` via WRITE panel | Manuscript writing |
+| `/mr gnn review` | `agents/reviewers/*.md` via REVIEW panel | 5-reviewer panel (includes reproducibility auditor) |
+| `/mr gnn full "hypothesis"` | `workflows/gnn-full-pipeline.js` | Full 6-phase pipeline |
 
-| Command | Agent Dispatched | Function |
-|---------|-----------------|----------|
-| `/mr store session info` | kb-manager | Persist key decisions, hypotheses, results, papers, and ideas |
-| `/mr auto-store on/off` | kb-manager (auto) | Toggle autonomous KB storage after each agent completes |
-| `/mr recall "query"` | kb-manager | Retrieve relevant KB context for injection into current session |
-| `/mr decompose <paper>` | kb-manager | Decompose a paper into its constituent modules (Paper → Module) |
-| `/mr combinations` | kb-manager | Recompute idea hypergraph (Module → Idea); discover K-way combinations |
-| `/mr recommend-venue <idea>` | kb-manager | Recommend target venues based on idea contribution profile |
-| `/mr kb-check` | kb-manager | Verify KB integrity |
-| `/mr fuse` | kb-manager | Consolidate related entries to prevent index bloat |
+**Suffix flags** applicable to any of the above: `--target N`, `--max-rounds N`, `--no-audit`, `--legacy`.
 
-### Support Commands
+Note: the standalone `/mr gnn verify` verb has been merged into `/mr gnn review` — the review panel already includes a reproducibility auditor, which was the entire purpose of standalone verify. The redundant `/mr gnn explore` verb has also been removed; use `idea` + `survey` instead.
 
-`/mr discuss` -> deep-discussion, `/mr write` -> paper-writer, `/mr rebuttal` -> rebuttal-writer, `/mr log` -> research-log, `/mr present` -> presentation-builder.
+## Domain-specific verbs (extensible)
+
+A domain can add extra verbs beyond the 10 canonical ones. Convention:
+
+- Add a row to the routing table below with `/mr <domain> <verb>` → `agents/<domain>-<verb>.md`.
+- Create the corresponding `agents/<domain>-<verb>.md` with proper frontmatter (`rigor_contract` + `parallelism_contract`).
+- Route: when the user types `/mr <domain> <verb>`, dispatch that agent via the `Agent` tool with the domain-knowledge context injection described in this file.
+
+Currently no extra verbs are defined for this domain — the 10 canonical verbs above are the complete surface.
 
 ---
 
@@ -72,10 +69,10 @@ Before dispatching any research agent, the orchestrator queries the KB for relev
 
 The orchestrator reads the active idea's `target_venue_tier` and `min_required_validation` fields to calibrate the pipeline:
 
-| Tier | Experiment Engineer | Theory Crafter | Review Simulator |
-|------|-------------------|----------------|------------------|
-| CCF-A | 6-8 datasets, 10+ baselines | Theory required (>=1 proof) | 4-role review calibrated to CCF-A |
-| CCF-B | 4-5 datasets, 7+ baselines | Theory preferred | 4-role review calibrated to CCF-B |
+| Tier | Experiment Engineer | Theory Crafter | Review Panel |
+|------|---------------------|----------------|--------------|
+| CCF-A | 6-8 datasets, 10+ baselines | Theory required (>=1 proof) | 5-reviewer panel calibrated to CCF-A |
+| CCF-B | 4-5 datasets, 7+ baselines | Theory preferred | 5-reviewer panel calibrated to CCF-B |
 | CCF-C | 3-4 datasets, 5+ baselines | Theory optional | Streamlined review |
 
 The orchestrator passes these calibration parameters to each agent's dispatch prompt. This prevents over-engineering for CCF-C targets and under-engineering for CCF-A targets.
@@ -96,13 +93,9 @@ When starting a new session: orchestrator reads the most recent session entry an
 
 ## Agent Dispatch Protocol
 
-### Phase 1: Idea Generation
+### `/mr gnn idea "topic"` — Idea Generation
 
-When the user invokes `/mr gnn idea "topic"` or Exploration phase:
-
-**Step 1**: Dispatch the gnn-idea-broker subagent using the `Agent` tool.
-
-Use the agent definition at `agents/gnn-idea-broker.md`. Pass the following context in the dispatch prompt:
+Dispatch the `gnn-idea-broker` subagent using the `Agent` tool with the definition at `agents/gnn-idea-broker.md`. Pass:
 
 > Research area: `$TOPIC`
 >
@@ -113,15 +106,11 @@ Use the agent definition at `agents/gnn-idea-broker.md`. Pass the following cont
 > 4. Generate 3-5 candidate research directions, each with a falsifiable hypothesis, novelty assessment citing at least 3 specific papers, feasibility assessment with resource estimates, and impact assessment with target venue evidence.
 > 5. Produce a structured Idea Broker Report.
 
-After the subagent completes, verify output quality: each direction must have a falsifiable hypothesis, at least 3 cited papers establishing the gap, and specific evidence for novelty/feasibility/impact scores. If quality gate fails, request re-execution with refined input.
+Verify: each direction has a falsifiable hypothesis, at least 3 cited papers establishing the gap, and specific evidence for novelty/feasibility/impact scores. If quality gate fails, request re-execution with refined input.
 
-### Phase 2: Literature Survey
+### `/mr gnn survey "topic"` — Literature Survey
 
-When the user invokes `/mr gnn survey "topic"`:
-
-**Step 1**: Dispatch the literature-survey subagent using the `Agent` tool.
-
-Use the agent definition at `agents/literature-survey.md`. Pass the following context:
+Dispatch `agents/literature-survey.md` with:
 
 > Research topic: `$TOPIC`
 > Optional filters: venue tier, year range, method type (from user input)
@@ -133,29 +122,25 @@ Use the agent definition at `agents/literature-survey.md`. Pass the following co
 > 4. Perform gap analysis using taxonomic, survey-based, and performance-based methods.
 > 5. Produce a structured Literature Survey Report with verified BibTeX entries.
 
-After the subagent completes, verify: search methodology documented, at least 50 papers screened, at least 20 deep-analyzed, gap analysis cites at least 2 independent surveys.
+Verify: search methodology documented, at least 50 papers screened, at least 20 deep-analyzed, gap analysis cites at least 2 independent surveys.
 
-### Phase 3: Paper Reading
+### `/mr gnn read <paper>` — Paper Reading
 
-When the user invokes `/mr gnn read <paper-path>`:
+Dispatch `agents/paper-reader.md` passing the paper content or path.
 
-**Step 1**: Dispatch the paper-reader subagent using the `Agent` tool.
+### `/mr gnn theory`, `/mr gnn prototype`, `/mr gnn experiment` — Construction Layer
 
-Use the agent definition at `agents/paper-reader.md`. Pass the paper content or path.
+Dispatch `theory-crafter`, `gnn-rapid-prototype`, and `experiment-engineer` following the same dispatch pattern. Pass outputs from previous phases as input context.
 
-### Phase 4-6: Construction Layer
+### `/mr gnn analyze`, `/mr gnn write`, `/mr gnn review` — Analysis / Write / Review Layer
 
-For `/mr gnn theory`, `/mr gnn prototype`, and `/mr gnn experiment`, dispatch the corresponding agents (theory-crafter, gnn-rapid-prototype, experiment-engineer) following the same dispatch pattern. Pass outputs from previous phases as input context.
-
-### Phase 7-9: Validation Layer
-
-For `/mr gnn analyze`, `/mr gnn verify`, and `/mr gnn review`, dispatch gnn-insight-analyzer, deep-verification, and review-simulator respectively. The verification and review agents must receive ALL outputs from prior phases.
+Dispatch `gnn-insight-analyzer` (via ANALYZE panel), `paper-writer` (via WRITE panel), and the 5-reviewer panel at `agents/reviewers/*.md` (via REVIEW panel) respectively. The review panel must receive ALL outputs from prior phases; its reproducibility-auditor role subsumes what was formerly the standalone verify verb.
 
 ---
 
-## Multi-Agent Pipeline: `/mr gnn full "hypothesis"`
+## Full Pipeline: `/mr gnn full "hypothesis"`
 
-When the user invokes the complete pipeline, dispatch agents sequentially with quality gates:
+Backed by `workflows/gnn-full-pipeline.js`. Dispatches agents sequentially with quality gates:
 
 ```
 Phase 1: Dispatch gnn-idea-broker -> Idea Broker Report
@@ -175,11 +160,10 @@ Phase 5: Dispatch experiment-engineer (with Prototype context) -> Experiment Rep
 
 Phase 6: Dispatch gnn-insight-analyzer (with Experiment context) -> Insight Report
 
-Phase 7: Dispatch deep-verification (with ALL prior outputs) -> Verification Report
-  Gate G5: All claims verified; no overclaiming detected.
+Phase 7: Dispatch paper-writer (via WRITE panel) -> Manuscript
 
-Phase 8: Dispatch review-simulator (with manuscript + all reports) -> Review Report
-  Gate G6: Score >=70/100 at target venue tier.
+Phase 8: Dispatch review panel (via REVIEW panel, with manuscript + all reports) -> Review Report
+  Gate G5: Score >=70/100 at target venue tier; reproducibility-auditor sign-off obtained.
 ```
 
 At each gate, if the condition is not met, the orchestrator must either: route back to the appropriate agent with refined input, or report the failure to the user with specific evidence of which conditions are unmet.
@@ -188,44 +172,7 @@ At each gate, if the condition is not met, the orchestrator must either: route b
 
 ## Concurrent Execution
 
-Where agent outputs are independent, dispatch agents concurrently:
-
-- `/mr gnn explore "topic"`: After Idea Broker completes, dispatch Literature Survey and (for the top 2-3 seed papers) Paper Reader concurrently.
-- `/mr gnn verify` and `/mr gnn analyze`: These can execute concurrently since they serve different functions (one checks correctness, the other extracts meaning).
-
----
-
-## Support Agent Dispatch
-
-Support agents are dispatched similarly:
-
-```
-/mr discuss "question" -> Agent(agents/deep-discussion.md, "Discussion on: $QUESTION")
-/mr write "section" -> "venue" -> Agent(agents/paper-writer.md, "Write $SECTION for $VENUE")
-/mr rebuttal <reviews> -> Agent(agents/rebuttal-writer.md, "Respond to reviews")
-/mr log -> Agent(agents/research-log.md, "Record daily entry")
-/mr present -> Agent(agents/presentation-builder.md, "Build presentation")
-```
-
-## Global Commands (Domain-Agnostic)
-
-The following commands are available at any time, regardless of which domain is active:
-
-| Command | Agent | Function |
-|---------|-------|----------|
-| `/mr new-domain <name> "<desc>"` | domain-init | Create a new research domain with full scaffolding |
-| `/mr ideas [--domain X] [--status Y]` | kb-manager | List ideas across domains with filtering |
-| `/idea <slug>` | kb-manager | View detailed idea entry |
-| `/idea promote\|discard <slug>` | kb-manager | Change idea status |
-| `/mr modules [--domain X] [--category Y]` | kb-manager | Browse module library |
-| `/module <slug>` | kb-manager | View module with source papers and composability |
-| `/mr papers [--domain X] [--tier Y] [--code]` | kb-manager | List papers with filtering |
-| `/paper <slug>` | kb-manager | View paper with modules and connections |
-| `/mr venues [--tier X] [--domain Y]` | kb-manager | Browse venue database |
-| `/venue <slug>` | kb-manager | View venue with requirements and similar papers |
-| `/mr status [--domain X]` | kb-manager | Pipeline overview: active ideas, experiments, papers |
-| `/mr search "query"` | kb-manager | Unified cross-KB search |
-| `/mr export idea\|bib <target>` | kb-manager | Export structured data |
+Where agent outputs are independent, dispatch agents concurrently. For example, once an Idea Broker Report exists, `literature-survey` and `paper-reader` (over the top 2-3 seed papers) can be dispatched in parallel. This aligns with the plugin-wide **default-parallel** parallelism doctrine — serial ordering must be justified by a real data dependency.
 
 ---
 

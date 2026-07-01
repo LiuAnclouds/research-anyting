@@ -6,13 +6,17 @@ argument-hint: "[subcommand] [...args]"
 
 # /mr — Moon-Research Entry Point
 
+> See `COMMANDS.md` at plugin root for the canonical command reference.
+
 All Moon-Research commands use the `/mr` prefix. This prevents conflicts with other Claude Code plugins and built-in commands.
 
 ## Command Parsing
 
 When invoked, `$ARGUMENTS` contains the subcommand and all its arguments. Parse `$ARGUMENTS` to extract the subcommand (first token) and remaining arguments. Route based on the subcommand as specified below.
 
-**IMPORTANT**: Every subcommand listed below MUST be handled. If the user types `/mr auto-store on`, parse subcommand=`auto-store`, args=`on`. Do not ignore unmatched subcommands — report "Unknown subcommand: X. Use /mr help for available commands."
+**IMPORTANT**: Every subcommand listed below MUST be handled. If the user types `/mr config kb.auto_store on`, parse subcommand=`config`, args=`kb.auto_store on`. Do not ignore unmatched subcommands — report "Unknown subcommand: X. Use /mr help for available commands."
+
+Unprefixed aliases (`/idea`, `/paper`, `/venue`, `/module`) are **not accepted** — always require the `/mr` prefix, e.g. `/mr idea <slug>`.
 
 ## Command Routing
 
@@ -23,8 +27,6 @@ When invoked, `$ARGUMENTS` contains the subcommand and all its arguments. Parse 
 ├── vla <cmd>              → 转发到 vla-vlm/SKILL.md (VLA子域)
 ├── vlm <cmd>              → 转发到 vla-vlm/SKILL.md (VLM子域)
 ├── <custom> <cmd>         → 转发到 <custom>/SKILL.md (用户创建领域)
-│
-├── auto "topic" [...]     → 自主全流程管线
 │
 ├── search "query"         → 跨KB搜索
 ├── papers [filters]       → 论文库浏览
@@ -40,13 +42,6 @@ When invoked, `$ARGUMENTS` contains the subcommand and all its arguments. Parse 
 ├── combinations           → 重新计算K-way超图
 ├── decompose <paper>      → 论文→模块分解
 │
-├── code-gen               → 理论→可执行代码
-├── hyperopt               → 系统化超参调优
-├── preprocess             → 数据准备+标准化
-│
-├── debug                  → 实验失败根因诊断
-├── monitor                → 训练实时监控
-│
 ├── venues [filters]       → 期刊数据库浏览
 ├── venue <slug>           → 期刊详情
 ├── recommend-venue <idea> → 为Idea推荐期刊
@@ -58,17 +53,21 @@ When invoked, `$ARGUMENTS` contains the subcommand and all its arguments. Parse 
 ├── discuss "question"     → 导师/同行/质疑者三角色
 │
 ├── store session info     → 手动持久化
-├── auto-store on/off      → 自动持久化开关
 ├── recall "query"         → 从KB恢复上下文
 ├── kb-check               → KB完整性验证
 ├── fuse                   → KB条目合并去重
+│
+├── health [<domain>|--all]→ P5 完成度评分
+├── cost [--budget USD]    → 成本报告
+├── dag                    → ASCII 管线图
+├── resume                 → 恢复计划
 │
 ├── new-domain <name> "<desc>" → 创建新研究领域
 ├── init <project-name>     → 初始化项目目录
 ├── status [--domain]       → 管线概览
 ├── log                     → 科研日志
 ├── export <type> <target>  → 导出数据
-├── config <key> <value>    → 配置系统参数
+├── config <key> <value>    → 配置系统参数 (含 kb.auto_store on|off)
 │
 └── help                    → 显示命令参考
 ```
@@ -102,7 +101,7 @@ Override via `/mr config projects.root /path/to/projects` and `/mr config kb.roo
 
 ### Domain Commands
 
-When the user types `/mr gnn <cmd>`, read the GNN orchestrator at `gnn/SKILL.md` and follow its dispatch protocol for `<cmd>`. The GNN orchestrator handles: idea, survey, read, theory, prototype, experiment, analyze, verify, review, explore, full, auto.
+When the user types `/mr gnn <cmd>`, read the GNN orchestrator at `gnn/SKILL.md` and follow its dispatch protocol for `<cmd>`. The GNN orchestrator handles: idea, survey, read, theory, prototype, experiment, analyze, review, full, auto. (Note: `explore` is redundant with `idea+survey`; `verify` is redundant with `review` — do not route these.)
 
 When the user types `/mr vla-vlm <cmd>` (or `/mr vla <cmd>` or `/mr vlm <cmd>`), read the VLA-VLM orchestrator at `vla-vlm/SKILL.md` and follow its dispatch protocol.
 
@@ -110,27 +109,27 @@ When the user types `/mr <custom> <cmd>` where `<custom>` is a user-created doma
 
 ### Autonomous Pipeline
 
-`/mr auto "topic"` dispatches the moon-pipeline agent. See `agents/moon-pipeline.md` for the complete 6-phase autonomous protocol.
+`/mr auto "topic"` is **deprecated**; use `/mr <domain> full` instead (e.g., `/mr gnn full`, `/mr vla-vlm full`). The domain-scoped `full` variant dispatches the moon-pipeline agent with the domain's calibrated 6-phase protocol. See `agents/moon-pipeline.md` for the complete protocol.
 
-Supported flags:
+Supported flags (when passed to `/mr <domain> full`):
 - `--human-gates` — require human approval at key decision points
 - `--stop-at <phase>` — run up to specified phase (explore, design, validate, analyze, write, review)
 - `--target <tier>` — calibrate for CCF-A, CCF-B, or CCF-C
 - `--dry-run` — plan the pipeline without executing
-- `/mr auto status` — show current pipeline status
-- `/mr auto resume` — resume from last checkpoint
+
+Pipeline state inspection is available via `/mr resume` (see System Commands below).
 
 ### Knowledge Base Commands
 
 `/mr store session info` — dispatch kb-manager agent to extract and persist the current session delta.
-`/mr auto-store on` — enable autonomous KB storage after each agent completes.
-`/mr auto-store off` — disable autonomous KB storage.
 `/mr recall "query"` — dispatch kb-manager agent to retrieve relevant KB context.
 `/mr decompose <paper>` — dispatch kb-manager agent to decompose a paper into modules.
 `/mr combinations` — dispatch kb-manager agent to recompute the idea hypergraph.
 `/mr recommend-venue <idea>` — dispatch kb-manager agent to recommend target venues.
 `/mr kb-check` — dispatch kb-manager agent to verify KB integrity.
 `/mr fuse` — dispatch kb-manager agent to consolidate related entries.
+
+Autonomous KB storage is toggled via `/mr config kb.auto_store on|off` (see Management Commands).
 
 ### Support Commands
 
@@ -155,12 +154,26 @@ Supported flags:
 
 ### Specialized Commands
 
-`/mr code-gen` — dispatch code-generator agent.
-`/mr hyperopt` — dispatch hyperparameter-optimizer agent.
-`/mr preprocess` — dispatch data-preprocessor agent.
-`/mr debug` — dispatch experiment-debugger agent.
-`/mr monitor` — dispatch experiment-monitor agent.
 `/mr alert` — dispatch literature-alert agent.
+
+### System Commands
+
+The following commands invoke maintenance/inspection scripts under the plugin root. For each, run the corresponding `py` script via Bash from the plugin root and stream the output back verbatim.
+
+| Command | Backing script | Purpose |
+| --- | --- | --- |
+| `/mr health [<domain>\|--all]` | `scripts/mr_health.py` | Compute 0-100 completeness score for a domain (P5). Runs 8 rubric checks (benchmark-registry entries, domain agents, quality gates, expert memory, RAG indices, SKILL routes, references, frontmatter). Prints a boxed scorecard with per-check status + suggested fix. Use `--all` to score every detected domain. |
+| `/mr cost [--budget USD]` | `scripts/mr_cost.py` | Cost report aggregated from `knowledge-base/audit-rounds/*.json`. Groups by phase (EXPLORE→...→REVIEW), shows tokens + estimated USD. `--budget` checks remaining. |
+| `/mr dag` | `scripts/mr_dag.py` | ASCII pipeline graph. All 6 panels with weights + CRIT axes + temperature-rotation tags. If `_state.json` exists, marks the current phase with ◀── HERE. |
+| `/mr resume` | `scripts/mr_resume.py` | Read `_state.json` + latest audit round JSON, print a recovery plan (unresolved findings, vetoes, suggested next command). |
+
+Invocation examples:
+- `/mr health` → run `py scripts/mr_health.py` in the plugin root; stream output.
+- `/mr health gnn` → run `py scripts/mr_health.py gnn`.
+- `/mr health --all` → run `py scripts/mr_health.py --all`.
+- `/mr cost --budget 500` → run `py scripts/mr_cost.py --budget 500`.
+- `/mr dag` → run `py scripts/mr_dag.py`.
+- `/mr resume` → run `py scripts/mr_resume.py`.
 
 ### Management Commands
 
@@ -170,7 +183,7 @@ Supported flags:
 `/mr log` — dispatch research-log agent.
 `/mr export <type> <target>` — dispatch kb-manager with export query.
 `/mr search "query"` — dispatch kb-manager with unified search query.
-`/mr config <key> <value>` — update system configuration.
+`/mr config <key> <value>` — update system configuration. Notable keys: `kb.auto_store on|off` (autonomous KB storage after each agent completes), `projects.root <path>`, `kb.root <path>`.
 `/mr help` — display command reference.
 
 ## Why `/mr` Prefix

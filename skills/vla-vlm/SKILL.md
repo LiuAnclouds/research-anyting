@@ -1,47 +1,64 @@
 ---
 name: mr-vlavlm-research
-description: This skill should be used when the user types "/mr vla-vlm", "/mr vla", "/mr vlm", or references vision-language-action models, embodied AI, robot foundation models, multimodal LLMs, vision-language models, or mentions specific VLA/mr vlm methods. Orchestrates a multi-agent research pipeline. All commands use "/mr vla-vlm", "/mr vla", or "/mr vlm" prefix.
+description: This skill should be used when the user types "/mr vla-vlm", "/mr vla", "/mr vlm", or references vision-language-action models, embodied AI, robot foundation models, multimodal LLMs, vision-language models, or mentions specific VLA/VLM methods. Orchestrates a multi-agent research pipeline. All commands use "/mr vla-vlm", "/mr vla", or "/mr vlm" prefix.
 ---
 
-# VLA/mr vlm Research Domain Orchestrator
+# VLA/VLM Research Domain Orchestrator
 
-This orchestrator manages a multi-agent research pipeline for VLA and VLM research. The pipeline architecture mirrors the GNN domain but applies VLA/VLM-specific knowledge and evaluation protocols. Agents whose logical structure is identical to GNN counterparts (literature-survey, paper-reader, theory-crafter, experiment-engineer, deep-verification, review-simulator) share the GNN agent definition files but are dispatched with VLA/mr vlm domain knowledge loaded from `vla-vlm/references/`. Domain-specific agents (idea-broker, rapid-prototype, insight-analyzer) have dedicated definitions.
+See `../../COMMANDS.md` for the full command reference. This file only documents `/mr vla-vlm` routing.
 
-## Command Routing
+This orchestrator manages the multi-agent research pipeline for VLA and VLM research. The pipeline architecture mirrors every other domain in Moon-Research but applies VLA/VLM-specific knowledge and evaluation protocols. Agents whose logical structure is identical to cross-domain counterparts (`literature-survey`, `paper-reader`, `theory-crafter`, `experiment-engineer`, `paper-writer`, reviewer panel) share the shared agent definition files but are dispatched with VLA/VLM domain knowledge loaded from `vla-vlm/references/`. Domain-specific agents (`vla-vlm-idea-broker`, `vla-vlm-rapid-prototype`, `vla-vlm-insight-analyzer`) have dedicated definitions.
 
-| Command | Agent Definition | Domain Knowledge |
-|---------|-----------------|------------------|
-| `/mr vla-vlm idea "topic"` | agents/vla-vlm-idea-broker.md | vla-vlm/references/ |
-| `/mr vla-vlm survey "topic"` | agents/literature-survey.md | vla-vlm/references/ |
-| `/mr vla-vlm read <paper>` | agents/paper-reader.md | vla-vlm/references/ |
-| `/mr vla-vlm theory` | agents/theory-crafter.md | vla-vlm/references/ |
-| `/mr vla-vlm prototype` | agents/vla-vlm-rapid-prototype.md | vla-vlm/references/ |
-| `/mr vla-vlm experiment` | agents/experiment-engineer.md | vla-vlm/references/ |
-| `/mr vla-vlm analyze` | agents/vla-vlm-insight-analyzer.md | vla-vlm/references/ |
-| `/mr vla-vlm verify` | agents/deep-verification.md | vla-vlm/references/ |
-| `/mr vla-vlm review` | agents/review-simulator.md | vla-vlm/references/ |
+## Command Routing (canonical 10 verbs)
 
-Sub-domain routing: `/mr vla <cmd>` restricts knowledge to VLA references only. `/mr vlm <cmd>` restricts to VLM references only.
+Every domain in Moon-Research exposes exactly the same 10 verbs. VLA-VLM's routing:
+
+| Command | Backing agent | Purpose |
+|---------|---------------|---------|
+| `/mr vla-vlm idea "topic"` | `agents/vla-vlm-idea-broker.md` | Generate 3-5 candidate research directions |
+| `/mr vla-vlm survey "topic"` | `agents/literature-survey.md` | Systematic literature review |
+| `/mr vla-vlm read <paper>` | `agents/paper-reader.md` | Three-pass paper read |
+| `/mr vla-vlm theory` | `agents/theory-crafter.md` | Formalize + prove |
+| `/mr vla-vlm prototype` | `agents/vla-vlm-rapid-prototype.md` | Minimum viable experiment (MVE) |
+| `/mr vla-vlm experiment` | `agents/experiment-engineer.md` | Full experiment matrix |
+| `/mr vla-vlm analyze` | `agents/vla-vlm-insight-analyzer.md` via ANALYZE panel | Extract insights |
+| `/mr vla-vlm write` | `agents/paper-writer.md` via WRITE panel | Manuscript writing |
+| `/mr vla-vlm review` | `agents/reviewers/*.md` via REVIEW panel | 5-reviewer panel (includes reproducibility auditor) |
+| `/mr vla-vlm full "hypothesis"` | `workflows/vla-vlm-full-pipeline.js` | Full 6-phase pipeline |
+
+**Suffix flags** applicable to any of the above: `--target N`, `--max-rounds N`, `--no-audit`, `--legacy`.
+
+Sub-domain routing: `/mr vla <cmd>` restricts knowledge to VLA references only. `/mr vlm <cmd>` restricts to VLM references only. Both are aliases into the same 10-verb surface.
+
+Note: the standalone `/mr vla-vlm verify` verb has been merged into `/mr vla-vlm review` — the review panel already includes a reproducibility auditor, which was the entire purpose of standalone verify. The redundant `/mr vla-vlm explore` verb has also been removed; use `idea` + `survey` instead.
+
+## Domain-specific verbs (extensible)
+
+A domain can add extra verbs beyond the 10 canonical ones. Convention:
+
+- Add a row to the routing table below with `/mr <domain> <verb>` → `agents/<domain>-<verb>.md`.
+- Create the corresponding `agents/<domain>-<verb>.md` with proper frontmatter (`rigor_contract` + `parallelism_contract`).
+- Route: when the user types `/mr <domain> <verb>`, dispatch that agent via the `Agent` tool with the domain-knowledge context injection described in this file.
+
+Currently no extra verbs are defined for this domain — the 10 canonical verbs above are the complete surface.
+
+---
 
 ## Agent Dispatch Protocol
 
-Each command dispatches a subagent using the `Agent` tool, following the same pattern as the GNN orchestrator. The agent definition file path and domain knowledge paths are specified in the table above.
+Each command dispatches a subagent using the `Agent` tool. The agent definition file path and domain knowledge paths are specified in the routing table above.
 
 ### Domain-Specific Context Injection
 
-When dispatching an agent that shares a GNN definition file, append VLA/VLM-specific context to the dispatch prompt:
+When dispatching an agent that shares a cross-domain definition file, append VLA/VLM-specific context to the dispatch prompt:
 
 > **Domain**: VLA, VLM, or VLA+VLM (as specified by user).
 > **Domain knowledge**: Load from `vla-vlm/references/papers-vla.md`, `vla-vlm/references/papers-vlm.md`, and `vla-vlm/references/benchmarks.md`.
 > **Evaluation protocols**: VLA-specific (LIBERO, CALVIN, SimplerEnv; sim-to-real gap quantification; embodiment diversity requirements) or VLM-specific (MME, MMBench, SEED-Bench, MM-Vet, POPE, HallusionBench; hallucination decomposition; prompt sensitivity analysis), as specified in `shared/references/evaluation-protocols.md`.
 
-### Phase 1: Idea Generation
+### `/mr vla-vlm idea "topic"` — Idea Generation
 
-When the user invokes `/mr vla-vlm idea "topic"`:
-
-**Step 1**: Dispatch the vla-vlm-idea-broker subagent using the `Agent` tool.
-
-Use the agent definition at `agents/vla-vlm-idea-broker.md`. Pass the following context:
+Dispatch the `vla-vlm-idea-broker` subagent using `agents/vla-vlm-idea-broker.md`. Pass:
 
 > Research area: `$TOPIC`
 > Sub-domain preference: VLA | VLM | both
@@ -53,13 +70,17 @@ Use the agent definition at `agents/vla-vlm-idea-broker.md`. Pass the following 
 > 4. Generate 3-5 candidate research directions, each with a falsifiable hypothesis, novelty assessment citing at least 3 specific papers, feasibility assessment with resource estimates, and impact assessment with target venue evidence.
 > 5. Produce a structured Idea Broker Report.
 
-After the subagent completes, verify: each direction has a falsifiable hypothesis, at least 3 cited papers establishing the gap, and specific evidence for novelty/feasibility/impact scores.
+Verify: each direction has a falsifiable hypothesis, at least 3 cited papers establishing the gap, and specific evidence for novelty/feasibility/impact scores.
 
-### Phase 2-9: [Same dispatch pattern as GNN orchestrator for all remaining phases]
+### Remaining verbs
 
-## Multi-Agent Pipeline: `/mr vla-vlm full "hypothesis"`
+`survey`, `read`, `theory`, `prototype`, `experiment`, `analyze`, `write`, `review` follow the same dispatch pattern as their GNN-domain analogues, with the VLA/VLM domain context injected as described above. The `review` verb runs the 5-reviewer panel; its reproducibility-auditor role subsumes what was formerly the standalone verify verb.
 
-Same sequential dispatch pattern as GNN full pipeline, with VLA/VLM-specific quality gates inserted at appropriate transitions.
+---
+
+## Full Pipeline: `/mr vla-vlm full "hypothesis"`
+
+Backed by `workflows/vla-vlm-full-pipeline.js`. Same sequential dispatch pattern as GNN full pipeline (idea → survey → theory → prototype → experiment → analyze → write → review), with VLA/VLM-specific quality gates inserted at appropriate transitions (see below).
 
 ## Knowledge Base Integration
 
@@ -84,10 +105,10 @@ Before dispatching any research agent, the orchestrator queries the KB for relev
 
 The orchestrator reads the active idea's `target_venue_tier` and `min_required_validation` fields to calibrate the pipeline:
 
-| Tier | Experiment Engineer | Theory Crafter | Review Simulator |
-|------|-------------------|----------------|------------------|
-| CCF-A | 6-8 benchmarks, 10+ baselines | Theory required (>=1 proof) | 4-role review calibrated to CCF-A |
-| CCF-B | 4-5 benchmarks, 7+ baselines | Theory preferred | 4-role review calibrated to CCF-B |
+| Tier | Experiment Engineer | Theory Crafter | Review Panel |
+|------|---------------------|----------------|--------------|
+| CCF-A | 6-8 benchmarks, 10+ baselines | Theory required (>=1 proof) | 5-reviewer panel calibrated to CCF-A |
+| CCF-B | 4-5 benchmarks, 7+ baselines | Theory preferred | 5-reviewer panel calibrated to CCF-B |
 | CCF-C | 3-4 benchmarks, 5+ baselines | Theory optional | Streamlined review |
 
 ### VLA/VLM-Specific Quality Gates
@@ -109,43 +130,7 @@ After each agent completes:
 
 When starting a new session: orchestrator reads the most recent session entry and dispatches kb-manager with `/mr recall "active context for VLA-VLM"` to recover: open hypotheses, pending decisions, active ideas with their module compositions, unresolved questions, and recommended venues.
 
-## Global Commands
-
-The following commands are available at any time regardless of domain:
-
-| Command | Agent | Function |
-|---------|-------|----------|
-| `/mr new-domain <name> "<desc>"` | domain-init | Create a new research domain |
-| `/mr ideas [--domain X] [--status Y]` | kb-manager | List ideas across domains |
-| `/idea <slug>` | kb-manager | View detailed idea entry |
-| `/idea promote\|discard <slug>` | kb-manager | Change idea status |
-| `/mr modules [--domain X] [--category Y]` | kb-manager | Browse module library |
-| `/module <slug>` | kb-manager | View module with source papers |
-| `/mr papers [--domain X] [--tier Y] [--code]` | kb-manager | List papers with filtering |
-| `/paper <slug>` | kb-manager | View paper with modules |
-| `/mr venues [--tier X] [--domain Y]` | kb-manager | Browse venue database |
-| `/venue <slug>` | kb-manager | View venue with requirements |
-| `/mr status [--domain X]` | kb-manager | Pipeline overview |
-| `/mr search "query"` | kb-manager | Unified cross-KB search |
-| `/mr export idea\|bib <target>` | kb-manager | Export structured data |
-| `/mr store session info` | kb-manager | Persist session findings |
-| `/mr auto-store on/off` | kb-manager | Toggle autonomous storage |
-| `/mr recall "query"` | kb-manager | Retrieve KB context |
-| `/mr decompose <paper>` | kb-manager | Decompose paper into modules |
-| `/mr combinations` | kb-manager | Recompute idea hypergraph |
-| `/mr recommend-venue <idea>` | kb-manager | Recommend target venues |
-| `/mr kb-check` | kb-manager | Verify KB integrity |
-| `/mr fuse` | kb-manager | Consolidate related entries |
-
-## Support Commands
-
-```
-/mr discuss "question" -> Agent(agents/deep-discussion.md, "Discussion on: $QUESTION")
-/mr write "section" -> "venue" -> Agent(agents/paper-writer.md, "Write $SECTION for $VENUE")
-/mr rebuttal <reviews> -> Agent(agents/rebuttal-writer.md, "Respond to reviews")
-/mr log -> Agent(agents/research-log.md, "Record daily entry")
-/mr present -> Agent(agents/presentation-builder.md, "Build presentation")
-```
+---
 
 ## Error Handling
 
