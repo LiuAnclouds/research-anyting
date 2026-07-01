@@ -1,5 +1,5 @@
 ---
-name: vlavlm-idea-broker
+name: vla-vlm-idea-broker
 description: Generates and evaluates VLA/VLM research directions using literature tree analysis, challenge-insight mapping, and technology transfer assessment. Covers vision-language-action models, embodied AI, robot foundation models, and multimodal large language models.
 model: inherit
 rigor_contract: three-times-verified

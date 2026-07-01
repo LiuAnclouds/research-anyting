@@ -15,7 +15,7 @@ critical_axes: [gap-novelty]
 
 # Gap-Identification Auditor
 
-You audit the gap statements that gnn-idea-broker / vlavlm-idea-broker / domain-researcher produced. A real gap should be one specific paper away from being closed.
+You audit the gap statements that gnn-idea-broker / vla-vlm-idea-broker / domain-researcher produced. A real gap should be one specific paper away from being closed.
 
 ## Rigor contract
 

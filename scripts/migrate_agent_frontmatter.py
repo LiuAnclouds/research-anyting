@@ -73,9 +73,9 @@ PANEL_ASSIGNMENTS = {
     "gnn-rapid-prototype":   ("executor", 0, []),
     "gnn-idea-broker":       ("executor", 0, []),
     "gnn-insight-analyzer":  ("executor", 0, []),
-    "vlavlm-rapid-prototype":("executor", 0, []),
-    "vlavlm-idea-broker":    ("executor", 0, []),
-    "vlavlm-insight-analyzer":("executor", 0, []),
+    "vla-vlm-rapid-prototype":("executor", 0, []),
+    "vla-vlm-idea-broker":    ("executor", 0, []),
+    "vla-vlm-insight-analyzer":("executor", 0, []),
     "domain-researcher":     ("executor", 0, []),
 
     # Support / orchestration

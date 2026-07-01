@@ -26,13 +26,13 @@ auto-surfaces relevant past entries instead of re-reading the whole file.
 
 The following class-of-bug lessons were pre-loaded from `knowledge-base/experts/_seed/generic-canonical-failures.md` on this domain's provisioning. They exist so this expert recognizes the general class of failure even before the current domain has encountered its own concrete instance.
 
-## 2026-06-30 — Motivated-reasoning bias: every finding confirms the paper
+## 2026-06-30 — Venue monoculture in survey
 
 - **Project**: gnn-dynamic (seed lesson)
-- **Phase / round**: REVIEW r0
-- **Locus**: audit-loop.js panel-aggregation output for r0; devils-advocate role's 3 counterexample-search transcripts.
-- **Issue**: All 5 REVIEW panel members returned score ≥85, no dissent. Devil's-advocate role failed — its 3 counterexample searches all resolved as "paper doesn't make this claim explicitly, so no failure". Root cause: LLM reviewer's default politeness bias. Motivated-reasoning: the reviewer looked for evidence of correctness, not against it.
-- **Axis that caught it**: `counterexample`
-- **Fix**: `audit-loop.js` temperature rotation — devils-advocate now runs at T=0.9 (adversarial), other reviewers at T=0.5 (critic) or T=0.2 (anchor). If aggregate is within 5pts of any other reviewer, devils-advocate re-runs with an adversarial re-prompt.
-- **Generalization**: Mode-collapse is a structural risk of any panel using the same base model. Diverse temperatures are the minimum viable mitigation; different models per role is P2+. Applies to every domain whose REVIEW panel is LLM-composed.
+- **Phase / round**: EXPLORE r0
+- **Locus**: literature/survey.md citation table (30 Tier-1 papers); shared/references/domain-quality-gates.md (venue distribution reference).
+- **Issue**: Literature survey pulled 30 Tier-1 papers but 24/30 (80%) came from ICLR + NeurIPS. Missed a whole line of work published at TKDD, TPAMI, and Nature Communications. Field-specific venues systematically under-searched because the initial query set was seeded from PapersWithCode alone.
+- **Axis that caught it**: `survey-bias-low`
+- **Fix**: bias-auditor cross-tabulates the survey's venue histogram vs. the field's known venue distribution (per `shared/references/domain-quality-gates.md`) and flags when the top-3 venues account for >60% of citations.
+- **Generalization**: PapersWithCode / OpenReview are dominant for LLM/CV but not for time-series (M4/M5 are workshop-only), medical imaging (MICCAI is field-native but under-indexed on those platforms), symbolic reasoning (JAIR is journal-only). Every domain has a "true venue distribution" that search-by-popularity biases against.
 

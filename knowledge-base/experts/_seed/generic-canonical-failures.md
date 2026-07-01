@@ -108,3 +108,43 @@ because that is the incident from which these lessons were distilled.
 - **Axis that caught it**: `ablation-narrative-consistency`
 - **Fix**: Recomputed with 5 seeds, confirmed full model wins by 0.4 AUC-PR (not statistically indistinguishable), rebolded the ablation table; added an ablation-coherence check that reads bold-cell winners from both tables and diffs them against the paragraph-level "wins uniformly / mixed / loses" claim.
 - **Generalization**: Bold cells in tables are load-bearing narrative claims — reviewers use them as a fast summary. Any ablation whose bolded winner disagrees with the main-results bolded winner needs an explicit narrative acknowledgment, or one of the two is wrong. Every domain with more than one results table needs this cross-table bold-winner consistency check.
+
+## 2026-06-30 — Cherry-picked seeds inflate reported gap
+
+- **Project**: gnn-dynamic (seed lesson)
+- **Phase / round**: ANALYZE r0
+- **Locus**: sections/05_experiments.tex Table 2 caption ("mean ± std over 3 runs"); experiments/path_a/logs/ (5 completed seeds); hyperparameter-sweep log showing 5 finished runs.
+- **Issue**: 5 seeds were run, only the 3 best were reported. The std reported was computed on the reported 3, hiding the actual seed variance. Cross-check against the hyperparameter-sweep logs showed 5 completed runs with std 3× the reported number. This is selective reporting, not a bookkeeping slip.
+- **Axis that caught it**: `stat-test-correctness`
+- **Fix**: Report ALL run seeds even if variance embarrasses; if some runs failed, state why explicitly. Statistics-expert now diffs the seed count in the results table against the run-log seed count and refuses ≥60 without a match.
+- **Generalization**: Any domain reporting mean±std needs a companion "seeds actually reported" count. Selective reporting is a scientific-misconduct risk, not a stylistic choice — every panel with a statistics slot must gate on this.
+
+## 2026-06-30 — Code repo dead / archived at review time
+
+- **Project**: gnn-dynamic (seed lesson)
+- **Phase / round**: REVIEW r0
+- **Locus**: manuscript/main.tex code-availability footnote (GitHub URL); the linked repository at review time.
+- **Issue**: Paper cited a code URL that returned 404 (repo deleted) or was archived / read-only. Reproducibility auditor's HEAD-check catches it. Related failure mode: repo exists but `pushed_at` > 2 years ago, README empty, dependencies unpinned — technically alive, practically dead.
+- **Axis that caught it**: `code-availability`
+- **Fix**: `verify_baselines.py`-style HTTP HEAD + GitHub API `pushed_at` check on every reviewed manuscript; refuse the code-availability axis ≥60 without a live repo AND a README AND recent activity (< 2 years).
+- **Generalization**: Cite-me-and-you-can-run-me is a hard promise. Every domain needs a scheduled repo-liveness scan since HEAD status decays with time. The check is cheap; the failure is expensive.
+
+## 2026-06-30 — Motivated-reasoning bias: every finding confirms the paper
+
+- **Project**: gnn-dynamic (seed lesson)
+- **Phase / round**: REVIEW r0
+- **Locus**: audit-loop.js panel-aggregation output for r0; devils-advocate role's 3 counterexample-search transcripts.
+- **Issue**: All 5 REVIEW panel members returned score ≥85, no dissent. Devil's-advocate role failed — its 3 counterexample searches all resolved as "paper doesn't make this claim explicitly, so no failure". Root cause: LLM reviewer's default politeness bias. Motivated-reasoning: the reviewer looked for evidence of correctness, not against it.
+- **Axis that caught it**: `counterexample`
+- **Fix**: `audit-loop.js` temperature rotation — devils-advocate now runs at T=0.9 (adversarial), other reviewers at T=0.5 (critic) or T=0.2 (anchor). If aggregate is within 5pts of any other reviewer, devils-advocate re-runs with an adversarial re-prompt.
+- **Generalization**: Mode-collapse is a structural risk of any panel using the same base model. Diverse temperatures are the minimum viable mitigation; different models per role is P2+. Applies to every domain whose REVIEW panel is LLM-composed.
+
+## 2026-06-30 — Venue monoculture in survey
+
+- **Project**: gnn-dynamic (seed lesson)
+- **Phase / round**: EXPLORE r0
+- **Locus**: literature/survey.md citation table (30 Tier-1 papers); shared/references/domain-quality-gates.md (venue distribution reference).
+- **Issue**: Literature survey pulled 30 Tier-1 papers but 24/30 (80%) came from ICLR + NeurIPS. Missed a whole line of work published at TKDD, TPAMI, and Nature Communications. Field-specific venues systematically under-searched because the initial query set was seeded from PapersWithCode alone.
+- **Axis that caught it**: `survey-bias-low`
+- **Fix**: bias-auditor cross-tabulates the survey's venue histogram vs. the field's known venue distribution (per `shared/references/domain-quality-gates.md`) and flags when the top-3 venues account for >60% of citations.
+- **Generalization**: PapersWithCode / OpenReview are dominant for LLM/CV but not for time-series (M4/M5 are workshop-only), medical imaging (MICCAI is field-native but under-indexed on those platforms), symbolic reasoning (JAIR is journal-only). Every domain has a "true venue distribution" that search-by-popularity biases against.

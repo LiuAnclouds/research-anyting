@@ -12,9 +12,9 @@ phase('Exploration')
 
 const ideaReport = await agent(
   'Generate 3-5 candidate research directions for the specified VLA/VLM topic. ' +
-  'Use the vlavlm-idea-broker agent definition. Each direction must include ' +
+  'Use the vla-vlm-idea-broker agent definition. Each direction must include ' +
   'a falsifiable hypothesis, >=3 cited papers, and novelty/feasibility/impact scores.',
-  { phase: 'Exploration', agentType: 'vlavlm-idea-broker', schema: null }
+  { phase: 'Exploration', agentType: 'vla-vlm-idea-broker', schema: null }
 )
 
 const surveyReport = await agent(
@@ -34,11 +34,11 @@ const theoryReport = await agent(
 )
 
 const protoReport = await agent(
-  'Execute a minimal viable experiment. Use the vlavlm-rapid-prototype agent definition. ' +
+  'Execute a minimal viable experiment. Use the vla-vlm-rapid-prototype agent definition. ' +
   'VLA: LIBERO-Spatial, 1-2 baselines, 1 embodiment, 1-2 GPU-days. ' +
   'VLM: MME + POPE, 1-2 baselines, single resolution, 1-2 GPU-days. ' +
   'Pre-register success criterion before execution.',
-  { phase: 'Construction', agentType: 'vlavlm-rapid-prototype', schema: null }
+  { phase: 'Construction', agentType: 'vla-vlm-rapid-prototype', schema: null }
 )
 
 const expReport = await agent(
@@ -55,10 +55,10 @@ phase('Validation')
 // shared/references/parallelism-doctrine.md they MUST fan out.
 const [insightReport, verifyReport, reviewReport] = await parallel([
   () => agent(
-    'Extract causal explanations for experimental outcomes. Use the vlavlm-insight-analyzer ' +
+    'Extract causal explanations for experimental outcomes. Use the vla-vlm-insight-analyzer ' +
     'agent definition. VLA: success rate decomposition, failure mode taxonomy. ' +
     'VLM: hallucination decomposition, capability profiling.',
-    { phase: 'Validation', agentType: 'vlavlm-insight-analyzer', schema: null }
+    { phase: 'Validation', agentType: 'vla-vlm-insight-analyzer', schema: null }
   ),
   () => agent(
     'Independently verify every claim. Use the deep-verification agent definition. ' +

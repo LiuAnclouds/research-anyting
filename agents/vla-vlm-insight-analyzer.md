@@ -1,5 +1,5 @@
 ---
-name: vlavlm-insight-analyzer
+name: vla-vlm-insight-analyzer
 description: Extracts causal explanations for VLA and VLM experimental outcomes. VLA-specific: success rate decomposition by task type, object novelty, horizon length; failure mode taxonomy. VLM-specific: hallucination decomposition by type; capability profiling; resolution sensitivity analysis.
 model: inherit
 rigor_contract: three-times-verified

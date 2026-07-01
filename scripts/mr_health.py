@@ -77,8 +77,8 @@ def _check_quality_gates(domain: str) -> tuple[int, str]:
     for p in candidates:
         if p.exists():
             text = p.read_text(encoding="utf-8", errors="replace")
-            # count table rows that look like <ID>-G<N>
-            n = len(re.findall(rf"\|\s*[A-Z0-9]+-G\d+\s*\|", text))
+            # count table rows that look like <ID>-G<N>; accept optional **bold** wrap
+            n = len(re.findall(r"\|\s*\*{0,2}[A-Z0-9]+-G\d+\*{0,2}\s*\|", text))
             return n, str(p)
     return 0, "not found"
 

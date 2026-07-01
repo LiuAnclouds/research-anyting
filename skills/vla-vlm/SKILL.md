@@ -11,13 +11,13 @@ This orchestrator manages a multi-agent research pipeline for VLA and VLM resear
 
 | Command | Agent Definition | Domain Knowledge |
 |---------|-----------------|------------------|
-| `/mr vla-vlm idea "topic"` | agents/vlavlm-idea-broker.md | vla-vlm/references/ |
+| `/mr vla-vlm idea "topic"` | agents/vla-vlm-idea-broker.md | vla-vlm/references/ |
 | `/mr vla-vlm survey "topic"` | agents/literature-survey.md | vla-vlm/references/ |
 | `/mr vla-vlm read <paper>` | agents/paper-reader.md | vla-vlm/references/ |
 | `/mr vla-vlm theory` | agents/theory-crafter.md | vla-vlm/references/ |
-| `/mr vla-vlm prototype` | agents/vlavlm-rapid-prototype.md | vla-vlm/references/ |
+| `/mr vla-vlm prototype` | agents/vla-vlm-rapid-prototype.md | vla-vlm/references/ |
 | `/mr vla-vlm experiment` | agents/experiment-engineer.md | vla-vlm/references/ |
-| `/mr vla-vlm analyze` | agents/vlavlm-insight-analyzer.md | vla-vlm/references/ |
+| `/mr vla-vlm analyze` | agents/vla-vlm-insight-analyzer.md | vla-vlm/references/ |
 | `/mr vla-vlm verify` | agents/deep-verification.md | vla-vlm/references/ |
 | `/mr vla-vlm review` | agents/review-simulator.md | vla-vlm/references/ |
 
@@ -39,9 +39,9 @@ When dispatching an agent that shares a GNN definition file, append VLA/VLM-spec
 
 When the user invokes `/mr vla-vlm idea "topic"`:
 
-**Step 1**: Dispatch the vlavlm-idea-broker subagent using the `Agent` tool.
+**Step 1**: Dispatch the vla-vlm-idea-broker subagent using the `Agent` tool.
 
-Use the agent definition at `agents/vlavlm-idea-broker.md`. Pass the following context:
+Use the agent definition at `agents/vla-vlm-idea-broker.md`. Pass the following context:
 
 > Research area: `$TOPIC`
 > Sub-domain preference: VLA | VLM | both

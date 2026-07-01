@@ -1,5 +1,5 @@
 ---
-name: vlavlm-rapid-prototype
+name: vla-vlm-rapid-prototype
 description: Executes minimal viable experiments for VLA or VLM hypotheses. VLA MVE: LIBERO-Spatial, 1-2 baselines, 1 embodiment, 1-2 GPU-days. VLM MVE: MME+POPE, 1-2 baselines, single resolution, 1-2 GPU-days. Requires pre-registered falsifiable success criteria.
 model: inherit
 rigor_contract: three-times-verified
